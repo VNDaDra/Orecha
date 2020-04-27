@@ -1,0 +1,28 @@
+<resources>
+    <string name="app_name">Orecha</string>
+    <string name="title_activity_login">Orecha</string>
+    <string name="login_email">Email</string>
+    <string name="login_password">Mật khẩu</string>
+    <string name="login_button">Đăng nhập</string>
+    <string name="hint_register">Chưa có tài khoản ? [Tạo ngay]</string>
+
+    <string name="retype_password">Nhập lại mật khẩu</string>
+    <string name="register_button">Đăng Kí</string>
+    <string name="hint_login">Đã có tài khoản ? Đăng nhập ngay</string>
+    <string name="loading">Đợi một chút nhé!</string>
+    <string name="logout">Đăng xuất</string>
+    <string name="input_message_hint">Tin nhắn</string>
+    <string name="send">Gửi</string>
+    <string name="placeholder_message">Placeholder message</string>
+    <string name="placeholder_name">DaDra</string>
+    <string name="update_profile">Đổi thông tin</string>
+    <string name="todo">TODO</string>
+    <string name="accept">Đồng ý</string>
+    <string name="decline">Hủy bỏ</string>
+    <string name="change">Thay đổi</string>
+    <string name="email">Email</string>
+    <string name="phone">Điện thoại</string>
+    <string name="add_friend">Thêm bạn</string>
+    <string name="delete_friend">Xóa bạn</string>
+    <string name="show_profile">Xem trang cá nhân</string>
+</resources>

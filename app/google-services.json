@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "298010407088",
+    "firebase_url": "https://real-time-chat-96883.firebaseio.com",
+    "project_id": "real-time-chat-96883",
+    "storage_bucket": "real-time-chat-96883.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:298010407088:android:d98c49f1df3a09df1e8b75",
+        "android_client_info": {
+          "package_name": "edu.dadra.orecha"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "298010407088-req7pgcpg860isruhksichtft8o1faa9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDA3YIAbdz9iSpX0-YwQMKyoEWNmK5MSaY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "298010407088-req7pgcpg860isruhksichtft8o1faa9.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

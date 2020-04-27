@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:padding="5dp">
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/textLayout_add_friend_by_email"
+        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="36dp"
+        android:autofillHints=""
+        android:hint="@string/login_email"
+        android:inputType="textEmailAddress"
+        app:boxBackgroundColor="#FFF"
+        app:hintTextColor="#000">
+        <com.google.android.material.textfield.TextInputEditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:maxLines="1"/>
+    </com.google.android.material.textfield.TextInputLayout>
+</LinearLayout>

@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ProfileActivity"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:layout_weight="0.6"
+        android:gravity="center"
+        android:background="@color/orange300">
+
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/profile_avatar"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:src="@drawable/ic_launcher_foreground"
+            app:civ_border_width="1dp"
+            app:civ_border_color="@android:color/white"/>
+
+        <TextView
+            android:id="@+id/profile_title_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="16dp"
+            android:gravity="center"
+            android:maxLength="24"
+            android:maxLines="1"
+            android:text="@string/placeholder_message"
+            android:textColor="@android:color/white"
+            android:textSize="20sp"
+            android:textStyle="bold"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <ImageButton
+                android:id="@+id/profile_decline"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="50dp"
+                android:src="@drawable/clear"
+                android:background="?android:selectableItemBackground"
+                android:contentDescription="@string/accept" />
+            <ImageButton
+                android:id="@+id/profile_accept"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/done"
+                android:background="?android:selectableItemBackground"
+                android:contentDescription="@string/decline" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="0.4"
+        android:gravity="center_vertical"
+        android:orientation="vertical"
+        android:paddingHorizontal="30dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="20dp">
+
+            <ImageView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="10dp"
+                android:layout_weight="0.1"
+                android:src="@drawable/mail"
+                android:contentDescription="@string/email" />
+
+            <EditText
+                android:id="@+id/profile_email"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="0.8"
+                android:background="@drawable/profile_edit_text"
+                android:maxLines="1"
+                android:text="@string/placeholder_message"
+                android:textSize="16sp"
+                android:inputType="textEmailAddress" />
+<!--            <com.google.android.material.textfield.TextInputLayout-->
+<!--                android:id="@+id/profile_email"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_marginEnd="8dp"-->
+<!--                android:layout_weight="0.8"-->
+<!--                android:autofillHints=""-->
+<!--                android:inputType="textEmailAddress"-->
+<!--                app:boxBackgroundMode="none"-->
+<!--                style="@style/FillRoundEditText">-->
+<!--                <EditText-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="@string/placeholder_message"-->
+<!--                    android:textSize="16sp"-->
+<!--                    android:maxLines="1"/>-->
+<!--            </com.google.android.material.textfield.TextInputLayout>-->
+
+            <ImageButton
+                android:id="@+id/profile_edit_email"
+                android:layout_width="40dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.1"
+                android:background="?android:selectableItemBackground"
+                android:src="@drawable/edit"
+                android:contentDescription="@string/change" />
+        </LinearLayout>
+
+        <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="20dp">
+
+        <ImageView
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginEnd="10dp"
+            android:layout_weight="0.1"
+            android:src="@drawable/person_icon"
+            android:contentDescription="@string/email" />
+
+        <EditText
+            android:id="@+id/profile_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="0.8"
+            android:background="@drawable/profile_edit_text"
+            android:maxLines="1"
+            android:text="@string/placeholder_message"
+            android:textSize="16sp"
+            android:inputType="textPersonName" />
+
+        <ImageButton
+            android:id="@+id/profile_edit_name"
+            android:layout_width="40dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.1"
+            android:background="?android:selectableItemBackground"
+            android:src="@drawable/edit"
+            android:contentDescription="@string/change" />
+    </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="20dp">
+
+            <ImageView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="10dp"
+                android:layout_weight="0.1"
+                android:src="@drawable/phone"
+                android:contentDescription="@string/phone" />
+
+            <EditText
+                android:id="@+id/profile_phone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="0.8"
+                android:background="@drawable/profile_edit_text"
+                android:maxLines="1"
+                android:maxLength="15"
+                android:inputType="phone"
+                android:text="@string/placeholder_name"
+                android:textSize="16sp" />
+
+            <ImageButton
+                android:id="@+id/profile_edit_phone"
+                android:layout_width="40dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.1"
+                android:background="?android:selectableItemBackground"
+                android:src="@drawable/edit"
+                android:contentDescription="@string/change" />
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/profile_update"
+            style="@style/BigButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="50dp"
+            android:backgroundTint="@color/orange300"
+            android:text="@string/update_profile" />
+
+    </LinearLayout>
+
+</LinearLayout>
