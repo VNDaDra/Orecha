@@ -9,6 +9,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -63,6 +64,7 @@ public class MainActivity extends AppCompatActivity {
     public Users currentUserData;
 
     private ImageView currentUserAvatar;
+    private TextView mainTitle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -137,6 +139,7 @@ public class MainActivity extends AppCompatActivity {
         tabLayout = findViewById(R.id.tabs);
         toolbar = findViewById(R.id.main_toolbar);
         currentUserAvatar = findViewById(R.id.main_toolbar_icon);
+        mainTitle = findViewById(R.id.main_toolbar_title);
     }
 
     private void getCurrentUserData() {
@@ -158,6 +161,8 @@ public class MainActivity extends AppCompatActivity {
                                         .load(R.drawable.ic_launcher_foreground)
                                         .placeholder(R.drawable.ic_launcher_foreground)
                                         .into(currentUserAvatar);
+
+                                mainTitle.setText(currentUserData.getDisplayName());
 
                             }
                         }

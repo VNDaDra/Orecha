@@ -4,27 +4,34 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.widget.PopupMenu;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.WriteBatch;
 import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -36,17 +43,18 @@ import javax.annotation.Nonnull;
 import edu.dadra.orecha.ChatActivity;
 import edu.dadra.orecha.Model.Friends;
 import edu.dadra.orecha.Model.Message;
+import edu.dadra.orecha.ProfileActivity;
 import edu.dadra.orecha.R;
 
 public class ChatListAdapter extends FirestoreRecyclerAdapter<Friends, ChatListAdapter.ViewHolder> {
     private static final String TAG = "ChatListAdapter";
     private Context context;
 
-    private FirebaseStorage storage;
-    private StorageReference storageReference;
+    private FirebaseUser firebaseUser;
     private FirebaseFirestore db;
     private String lastMessage;
     private Date date;
+    private FirebaseStorage storage;
 
     public ChatListAdapter(@NonNull FirestoreRecyclerOptions<Friends> options) {
         super(options);
@@ -79,6 +87,32 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Friends, ChatListA
                 startChatRoom(friend);
             }
         });
+
+        PopupMenu popup = new PopupMenu(context, holder.time);
+        popup.inflate(R.menu.chat_list_menu);
+        popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                switch (item.getItemId()) {
+                    case R.id.show_profile_option:
+                        moveToProfileActivity(friend);
+                        return true;
+                    case R.id.delete_message_option:
+                        deleteMessage(friend);
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+        });
+        holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                popup.show();
+                return true;
+            }
+        });
+
     }
 
     @Nonnull
@@ -89,7 +123,7 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Friends, ChatListA
         context = parent.getContext();
         db = FirebaseFirestore.getInstance();
         storage = FirebaseStorage.getInstance();
-        storageReference = storage.getReference();
+        firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
         return new ViewHolder(view);
     }
 
@@ -162,6 +196,57 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Friends, ChatListA
         chatIntent.putExtra("friendId", friend.getId());
         chatIntent.putExtra("friendAvatar", friend.getPhotoUrl());
         context.startActivity(chatIntent);
+    }
+
+    private void moveToProfileActivity(Friends friend) {
+        Intent profileIntent = new Intent(context, ProfileActivity.class);
+        profileIntent.putExtra("id", friend.getId());
+        profileIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        context.startActivity(profileIntent);
+    }
+
+    private void deleteMessage(Friends friend) {
+        WriteBatch batch = db.batch();
+        String roomId = friend.getRoomId();
+
+        //Update chat information in MY contact collection
+        DocumentReference friendIdRef = db.collection("contacts").document(firebaseUser.getUid())
+                .collection("userContacts").document(friend.getId());
+        batch.update(friendIdRef, "roomId", "");
+        batch.update(friendIdRef, "hasChat", false);
+        batch.update(friendIdRef, "lastMessageTime", null);
+
+        //Update chat information in FRIEND contact collection
+        DocumentReference myIdRef = db.collection("contacts").document(friend.getId())
+                .collection("userContacts").document(firebaseUser.getUid());
+        batch.update(myIdRef, "roomId", "");
+        batch.update(myIdRef, "hasChat", false);
+        batch.update(myIdRef, "lastMessageTime", null);
+
+        //Delete room in rooms collection
+        DocumentReference roomId_my_roomsCollection = db.collection("rooms").document(firebaseUser.getUid())
+                .collection("userRooms").document(roomId);
+        DocumentReference roomId_friend_roomsCollection = db.collection("rooms").document(friend.getId())
+                .collection("userRooms").document(roomId);
+        batch.delete(roomId_my_roomsCollection);
+        batch.delete(roomId_friend_roomsCollection);
+
+        //Delete message in messages collection
+        DocumentReference roomId_messageCollection = db.collection("message").document(roomId);
+        batch.delete(roomId_messageCollection);
+
+        batch.commit().addOnCompleteListener(new OnCompleteListener<Void>() {
+            @Override
+            public void onComplete(@NonNull Task<Void> task) {
+                Toast.makeText(context, "Đã xóa", Toast.LENGTH_SHORT).show();
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                Toast.makeText(context, "Không thể xóa", Toast.LENGTH_SHORT).show();
+            }
+        });
+
     }
 
 }

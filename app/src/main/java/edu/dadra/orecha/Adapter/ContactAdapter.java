@@ -28,7 +28,6 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.WriteBatch;
 import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -46,9 +45,8 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
 
     private FirebaseFirestore db;
     private FirebaseUser firebaseUser;
-    private DocumentReference myRoomIdRef, friendIdRef, myIdRef;
+    private DocumentReference friendIdRef, myIdRef;
     private FirebaseStorage storage;
-    private StorageReference storageReference;
 
     public ContactAdapter(@NonNull FirestoreRecyclerOptions<Friends> options) {
         super(options);
@@ -72,34 +70,32 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
             public void onClick(View v) {
                 if (friend.getRoomId().equals("")) {
                     createChatRoom(friend);
-                    Toast.makeText(context,
-                            "Tạo phòng chat thành công", Toast.LENGTH_SHORT).show();
                 } else {
                     startChatRoom(friend);
                 }
             }
         });
 
+        PopupMenu popup = new PopupMenu(context, holder.menu);
+        popup.inflate(R.menu.contact_menu);
+        popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                switch (item.getItemId()) {
+                    case R.id.show_profile_option:
+                        moveToProfileActivity(friend);
+                        return true;
+                    case R.id.delete_friend_option:
+                        deleteFriend(friend);
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+        });
         holder.menu.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                PopupMenu popup = new PopupMenu(context, holder.menu);
-                popup.inflate(R.menu.contact_menu);
-                popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-                    @Override
-                    public boolean onMenuItemClick(MenuItem item) {
-                        switch (item.getItemId()) {
-                            case R.id.show_profile_option:
-                                moveToProfileActivity(friend);
-                                return true;
-                            case R.id.delete_friend_option:
-                                deleteFriend(friend);
-                                return true;
-                            default:
-                                return false;
-                        }
-                    }
-                });
                 popup.show();
             }
         });
@@ -115,7 +111,6 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
         db = FirebaseFirestore.getInstance();
         firebaseUser  = FirebaseAuth.getInstance().getCurrentUser();
         storage = FirebaseStorage.getInstance();
-        storageReference = storage.getReference();
         return new ViewHolder(view);
     }
 
@@ -134,6 +129,7 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
             avatar = itemView.findViewById(R.id.contact_avatar);
             menu = itemView.findViewById(R.id.contact_option_button);
         }
+
     }
 
     private void startChatRoom(Friends friend) {
@@ -147,8 +143,9 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
     }
 
     private void createChatRoom(Friends friend) {
+        WriteBatch batch = db.batch();
 
-        myRoomIdRef = db.collection("rooms").document(firebaseUser.getUid())
+        DocumentReference myRoomIdRef = db.collection("rooms").document(firebaseUser.getUid())
                 .collection("userRooms").document();
         String roomId = myRoomIdRef.getId();
 
@@ -157,40 +154,38 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
         roomData.put("lastMessageId", "");
 
         //Create roomId in Rooms collection - MY DOCUMENT
-        myRoomIdRef.set(roomData)
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Log.d(TAG, "Error writing my-roomId document", e);
-                    }
-                });
+        batch.set(myRoomIdRef, roomData);
 
         //Create roomId in Rooms collection - FRIEND DOCUMENT
-        db.collection("rooms").document(friend.getId())
-                .collection("userRooms").document(roomId)
-                .set(roomData)
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Log.d(TAG, "Error writing friend-roomId document", e);
-                    }
-                });
+        DocumentReference roomId_friend_roomsCollection = db.collection("rooms").document(friend.getId())
+                .collection("userRooms").document(roomId);
+        batch.set(roomId_friend_roomsCollection, roomData);
 
-        //Update roomId in MY contact collection
+        //Update chat information in MY contact collection
         friendIdRef = db.collection("contacts").document(firebaseUser.getUid())
                 .collection("userContacts").document(friend.getId());
+        batch.update(friendIdRef, "roomId", roomId);
+        batch.update(friendIdRef, "hasChat", true);
+        batch.update(friendIdRef, "lastMessageTime", null);
 
-        friendIdRef.update("roomId", roomId);
-        friendIdRef.update("hasChat", true);
-        friendIdRef.update("lastMessageTime", null);
-
-        //Update roomId in FRIEND contact collection
+        //Update chat information in FRIEND contact collection
         myIdRef = db.collection("contacts").document(friend.getId())
                 .collection("userContacts").document(firebaseUser.getUid());
+        batch.update(myIdRef, "roomId", roomId);
+        batch.update(myIdRef, "hasChat", true);
+        batch.update(myIdRef, "lastMessageTime", null);
 
-        myIdRef.update("roomId", roomId);
-        myIdRef.update("hasChat", true);
-        myIdRef.update("lastMessageTime", null);
+        batch.commit().addOnCompleteListener(new OnCompleteListener<Void>() {
+            @Override
+            public void onComplete(@NonNull Task<Void> task) {
+                Toast.makeText(context, "Tạo phòng thành công", Toast.LENGTH_SHORT).show();
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                Toast.makeText(context, "Lỗi", Toast.LENGTH_SHORT).show();
+            }
+        });
 
     }
 
@@ -226,7 +221,7 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
         batch.commit().addOnCompleteListener(new OnCompleteListener<Void>() {
             @Override
             public void onComplete(@NonNull Task<Void> task) {
-                Toast.makeText(context, "Xóa bạn thành công", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, "Đã xóa bạn", Toast.LENGTH_SHORT).show();
             }
         });
 
