@@ -26,4 +26,5 @@
     <string name="delete_friend">Xóa bạn</string>
     <string name="show_profile">Xem trang cá nhân</string>
     <string name="delete_message">Xóa tin nhắn</string>
+    <string name="search">Tìm kiếm</string>
 </resources>

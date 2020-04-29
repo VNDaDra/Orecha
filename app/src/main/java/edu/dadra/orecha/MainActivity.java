@@ -22,6 +22,7 @@ import com.bumptech.glide.Glide;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.google.android.material.textfield.TextInputLayout;
@@ -129,7 +130,7 @@ public class MainActivity extends AppCompatActivity {
             showAddFriendDialog();
         }
         if (item.getItemId() == R.id.logout_option) {
-            logout();
+            confirmLogout();
         }
         return true;
     }
@@ -300,5 +301,23 @@ public class MainActivity extends AppCompatActivity {
         loginIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(loginIntent);
         finish();
+    }
+
+    private void confirmLogout() {
+        new MaterialAlertDialogBuilder(this, R.style.AlertDialogTheme)
+                .setTitle("Xác nhận ?")
+                .setNegativeButton("Hủy bỏ", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                })
+                .setPositiveButton("Đăng xuất", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        logout();
+                    }
+                })
+                .show();
     }
 }

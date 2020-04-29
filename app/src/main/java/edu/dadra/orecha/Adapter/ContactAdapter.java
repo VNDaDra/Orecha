@@ -1,6 +1,7 @@
 package edu.dadra.orecha.Adapter;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -21,6 +22,7 @@ import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
@@ -86,7 +88,7 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
                         moveToProfileActivity(friend);
                         return true;
                     case R.id.delete_friend_option:
-                        deleteFriend(friend);
+                        confirmDelete(friend);
                         return true;
                     default:
                         return false;
@@ -224,8 +226,23 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
                 Toast.makeText(context, "Đã xóa bạn", Toast.LENGTH_SHORT).show();
             }
         });
+    }
 
-
-
+    private void confirmDelete(Friends friend) {
+        new MaterialAlertDialogBuilder(context, R.style.AlertDialogTheme)
+                .setTitle("Xác nhận")
+                .setNegativeButton("Hủy bỏ", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                })
+                .setPositiveButton("Xóa", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        deleteFriend(friend);
+                    }
+                })
+                .show();
     }
 }
