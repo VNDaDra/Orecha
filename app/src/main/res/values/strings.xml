@@ -27,4 +27,7 @@
     <string name="show_profile">Xem trang cá nhân</string>
     <string name="delete_message">Xóa tin nhắn</string>
     <string name="search">Tìm kiếm</string>
+    <string name="contact">Liên hệ</string>
+    <string name="chat">Chat</string>
+    <string name="group">Nhóm</string>
 </resources>

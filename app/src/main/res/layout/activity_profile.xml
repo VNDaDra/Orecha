@@ -13,7 +13,7 @@
         android:orientation="vertical"
         android:layout_weight="0.6"
         android:gravity="center"
-        android:background="@color/orange300">
+        android:background="@drawable/toolbar_gradient">
 
         <de.hdodenhof.circleimageview.CircleImageView
             android:id="@+id/profile_avatar"

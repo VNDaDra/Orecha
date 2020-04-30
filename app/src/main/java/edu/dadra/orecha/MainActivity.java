@@ -16,15 +16,15 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.viewpager2.widget.ViewPager2;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 
 import com.bumptech.glide.Glide;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.tabs.TabLayout;
-import com.google.android.material.tabs.TabLayoutMediator;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -34,33 +34,25 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
 
-import java.util.ArrayList;
 import java.util.Objects;
 
 import edu.dadra.orecha.Main.ChatListFragment;
 import edu.dadra.orecha.Main.ContactFragment;
 import edu.dadra.orecha.Main.GroupListFragment;
-import edu.dadra.orecha.Main.ViewPagerAdapter;
 import edu.dadra.orecha.Model.Users;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
 
-    TabLayout tabLayout;
-    ViewPager2 viewPager;
-    ViewPagerAdapter viewPagerAdapter;
-    Toolbar toolbar;
-    private ArrayList<String> tabTitle = new ArrayList<>();
+    private Toolbar toolbar;
 
     private FirebaseUser firebaseUser;
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
-    private DocumentReference myIdRef, friendIdRef;
+    private DocumentReference friendIdRef;
     private FirebaseStorage storage;
-    private StorageReference storageReference;
 
     public Users currentUserData;
 
@@ -76,7 +68,6 @@ public class MainActivity extends AppCompatActivity {
         firebaseUser = mAuth.getCurrentUser();
         db = FirebaseFirestore.getInstance();
         storage = FirebaseStorage.getInstance();
-        storageReference = storage.getReference();
 
         currentUserData = new Users();
         getCurrentUserData();
@@ -86,28 +77,37 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
 
-        viewPagerAdapter = new ViewPagerAdapter(getSupportFragmentManager(), getLifecycle());
-        viewPagerAdapter.addFragment(new ChatListFragment());
-        viewPagerAdapter.addFragment(new GroupListFragment());
-        viewPagerAdapter.addFragment(new ContactFragment());
-
-        tabTitle.add("Chat");
-        tabTitle.add("Nhóm");
-        tabTitle.add("Bạn Bè");
-
-        viewPager.setOrientation(ViewPager2.ORIENTATION_HORIZONTAL);
-        viewPager.setAdapter(viewPagerAdapter);
-        viewPager.setCurrentItem(0, true);
-
-        new TabLayoutMediator(tabLayout, viewPager,
-                new TabLayoutMediator.TabConfigurationStrategy() {
-                    @Override
-                    public void onConfigureTab(@NonNull TabLayout.Tab tab, int position) {
-                        tab.setText(tabTitle.get(position));
-                    }
-                }).attach();
 
         moveToProfileActivity();
+    }
+
+    private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
+            = new BottomNavigationView.OnNavigationItemSelectedListener() {
+        @Override
+        public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+            Fragment fragment;
+            switch (item.getItemId()) {
+                case R.id.navigation_home:
+                    fragment = new ChatListFragment();
+                    openFragment(fragment);
+                    return true;
+                case R.id.navigation_sms:
+                    fragment = new GroupListFragment();
+                    openFragment(fragment);
+                    return true;
+                case R.id.navigation_notifications:
+                    fragment = new ContactFragment();
+                    openFragment(fragment);
+                    return true;
+            }
+            return false;
+        }
+    };
+    public void openFragment(Fragment fragment) {
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.container, fragment);
+        transaction.addToBackStack(null);
+        transaction.commit();
     }
 
     @Override
@@ -136,8 +136,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initLayout() {
-        viewPager = findViewById(R.id.view_pager);
-        tabLayout = findViewById(R.id.tabs);
+        BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
+        bottomNavigationView.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
+        openFragment(new ChatListFragment());
+
         toolbar = findViewById(R.id.main_toolbar);
         currentUserAvatar = findViewById(R.id.main_toolbar_icon);
         mainTitle = findViewById(R.id.main_toolbar_title);
@@ -258,7 +260,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateFriendContact(QueryDocumentSnapshot doc) {
-        myIdRef = db.collection("contacts").document(doc.getId())
+        DocumentReference myIdRef = db.collection("contacts").document(doc.getId())
                 .collection("userContacts").document(firebaseUser.getUid());
 
         myIdRef.set(currentUserData)
