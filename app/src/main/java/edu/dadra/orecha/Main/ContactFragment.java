@@ -1,9 +1,12 @@
 package edu.dadra.orecha.Main;
 
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -31,9 +34,11 @@ public class ContactFragment extends Fragment {
     private LinearLayoutManager linearLayoutManager;
     ContactAdapter contactAdapter;
 
-    private FirebaseUser user;
+    private FirebaseUser firebaseUser;
     private FirebaseFirestore db;
     private CollectionReference contactsRef;
+
+    private EditText searchBar;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -46,22 +51,50 @@ public class ContactFragment extends Fragment {
         contactFragmentView = inflater.inflate(R.layout.fragment_contact, container, false);
 
         init();
+        searchBar = contactFragmentView.findViewById(R.id.contact_search_bar);
 
-        contactsRef = db.collection("contacts").document(user.getUid())
+        contactsRef = db.collection("contacts").document(firebaseUser.getUid())
                 .collection("userContacts");
         Query query = contactsRef.orderBy("email", Query.Direction.ASCENDING);
 
-        FirestoreRecyclerOptions<Friends> options = new FirestoreRecyclerOptions.Builder<Friends>()
+        FirestoreRecyclerOptions<Friends> defaultOptions = new FirestoreRecyclerOptions.Builder<Friends>()
                 .setQuery(query, Friends.class).build();
-        contactAdapter = new ContactAdapter(options);
+        contactAdapter = new ContactAdapter(defaultOptions);
         contactAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
             @Override
             public void onItemRangeInserted(int positionStart, int itemCount) {
-                contactRecyclerView.scrollToPosition(contactAdapter.getItemCount() - 1);
+                super.onItemRangeInserted(positionStart, itemCount);
             }
         });
         contactAdapter.notifyDataSetChanged();
         contactRecyclerView.setAdapter(contactAdapter);
+
+        searchBar.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (s.toString().trim().length() != 0) {
+                    Query filterQuery = db.collection("contacts").document(firebaseUser.getUid())
+                            .collection("userContacts")
+                            .orderBy("displayName", Query.Direction.ASCENDING)
+                            .startAt(s.toString().trim())
+                            .endAt(s.toString().trim() + "\uf8ff");
+                    FirestoreRecyclerOptions<Friends> filterOption = new FirestoreRecyclerOptions.Builder<Friends>()
+                            .setQuery(filterQuery, Friends.class).build();
+                    contactAdapter.updateOptions(filterOption);
+                } else {
+                    contactAdapter.updateOptions(defaultOptions);
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+
+            }
+        });
 
         return contactFragmentView;
     }
@@ -72,7 +105,7 @@ public class ContactFragment extends Fragment {
                 LinearLayoutManager.VERTICAL, false);
         contactRecyclerView.setLayoutManager(linearLayoutManager);
         db = FirebaseFirestore.getInstance();
-        user = FirebaseAuth.getInstance().getCurrentUser();
+        firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
     }
 
 
