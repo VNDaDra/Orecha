@@ -13,6 +13,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.widget.PopupMenu;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -27,6 +28,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Query;
@@ -147,22 +149,26 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Friends, ChatListA
 
 
     private void getLastMessage(String roomId, TextView lastMessageTextView, TextView time) {
+
         CollectionReference messagesRef = db.collection("messages").document(roomId)
                 .collection("messagesOfThisRoom");
         Query query = messagesRef.orderBy("time", Query.Direction.DESCENDING);
         lastMessage = "";
-
-        query.limit(1).get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+        query.limit(1)
+                .addSnapshotListener(new EventListener<QuerySnapshot>() {
                     @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        if (task.isSuccessful()) {
-                            for(QueryDocumentSnapshot doc : task.getResult()) {
-                                Message lastMesObj = doc.toObject(Message.class);
+                    public void onEvent(@Nullable QuerySnapshot querySnapshot, @Nullable FirebaseFirestoreException e) {
+                        if (e != null) {
+                            Log.w(TAG, "Listen failed.", e);
+                            return;
+                        }
+
+                        for (QueryDocumentSnapshot doc : querySnapshot) {
+                            Message lastMesObj = doc.toObject(Message.class);
                                 lastMessage = lastMesObj.getMessage();
                                 date = lastMesObj.getTime().toDate();
-                            }
-                            if (lastMessage.equals("")) {
+                        }
+                        if (lastMessage.equals("")) {
                                 lastMessageTextView.setVisibility(View.GONE);
                                 time.setVisibility(View.GONE);
                             } else {
@@ -171,9 +177,9 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Friends, ChatListA
                             }
 
                             lastMessage = "";
-                        }
                     }
                 });
+
     }
 
     private String formatDate(Date date) {

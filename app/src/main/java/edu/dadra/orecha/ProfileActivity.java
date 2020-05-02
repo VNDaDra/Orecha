@@ -18,6 +18,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.bumptech.glide.Glide;
@@ -28,7 +29,10 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.storage.FirebaseStorage;
@@ -36,18 +40,14 @@ import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
-import java.util.Objects;
-
 import edu.dadra.orecha.Model.Users;
 
 public class ProfileActivity extends AppCompatActivity {
 
+    private static final String TAG = "ProfileActivity";
     private final int PICK_IMAGE_REQUEST = 71;
 
-    private Intent intent;
-
     private FirebaseFirestore db;
-    private FirebaseAuth mAuth;
     private FirebaseUser firebaseUser;
     private DocumentReference userRef;
     private FirebaseStorage storage;
@@ -57,9 +57,10 @@ public class ProfileActivity extends AppCompatActivity {
     private TextView profileTitleName;
     private EditText profileEmail, profilePhone, profileName;
     private Button updateProfileButton;
-    private ImageButton profileEditName, profileEditEmail, profileEditPhone, profileDecline, profileAccept;
+    private ImageButton profileEditNameButton, profileEditEmailButton, profileEditPhoneButton,
+            profileDeclineButton, profileAcceptButton;
 
-    private String id;
+    private String userId;
     private Users currentUserData;
     private Uri filePath;
 
@@ -68,12 +69,12 @@ public class ProfileActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
 
-        intent = getIntent();
-        id = intent.getStringExtra("id");
+        Intent intent = getIntent();
+        userId = intent.getStringExtra("id");
 
         initFirebase();
         initLayout();
-        getUserData(id);
+        getUserData(userId);
 
         setFieldEditable();
         avatarListener();
@@ -85,8 +86,7 @@ public class ProfileActivity extends AppCompatActivity {
 
     private void initFirebase() {
         db = FirebaseFirestore.getInstance();
-        mAuth = FirebaseAuth.getInstance();
-        firebaseUser = mAuth.getCurrentUser();
+        firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
         storage = FirebaseStorage.getInstance();
         storageReference = storage.getReference("avatars");
     }
@@ -94,15 +94,17 @@ public class ProfileActivity extends AppCompatActivity {
     private void initLayout() {
         profileAvatar = findViewById(R.id.profile_avatar);
         profileTitleName = findViewById(R.id.profile_title_name);
+        profileDeclineButton = findViewById(R.id.profile_decline);
+        profileAcceptButton = findViewById(R.id.profile_accept);
 
         profileEmail = findViewById(R.id.profile_email);
         profileName = findViewById(R.id.profile_name);
         profilePhone = findViewById(R.id.profile_phone);
-        profileEditName = findViewById(R.id.profile_edit_name);
-        profileEditEmail = findViewById(R.id.profile_edit_email);
-        profileEditPhone = findViewById(R.id.profile_edit_phone);
-        profileDecline = findViewById(R.id.profile_decline);
-        profileAccept = findViewById(R.id.profile_accept);
+
+        profileEditEmailButton = findViewById(R.id.profile_edit_email);
+        profileEditNameButton = findViewById(R.id.profile_edit_name);
+        profileEditPhoneButton = findViewById(R.id.profile_edit_phone);
+
         updateProfileButton = findViewById(R.id.profile_update);
 
         profileName.setEnabled(false);
@@ -114,56 +116,84 @@ public class ProfileActivity extends AppCompatActivity {
         profileEmail.setText("");
         profilePhone.setText("");
 
-        profileDecline.setVisibility(View.INVISIBLE);
-        profileAccept.setVisibility(View.INVISIBLE);
-        profileEditEmail.setVisibility(View.INVISIBLE); //User can't change email right now
+        profileDeclineButton.setVisibility(View.INVISIBLE);
+        profileAcceptButton.setVisibility(View.INVISIBLE);
+        profileEditEmailButton.setVisibility(View.INVISIBLE); //User can't change email right now
 
         //Friend view
-        if (!id.equals(firebaseUser.getUid())) {
+        if (!userId.equals(firebaseUser.getUid())) {
             profileEmail.setTextColor(Color.BLACK);
             profileName.setTextColor(Color.BLACK);
             profilePhone.setTextColor(Color.BLACK);
             //Can't change friend information
             profileAvatar.setEnabled(false);
-            profileEditName.setVisibility(View.GONE);
-            profileEditPhone.setVisibility(View.GONE);
+            profileEditNameButton.setVisibility(View.GONE);
+            profileEditPhoneButton.setVisibility(View.GONE);
             updateProfileButton.setVisibility(View.GONE);
         }
     }
 
     private void getUserData(String id) {
-        db.collection("users")
-                .whereEqualTo("id", id)
-                .get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+        db.collection("users").document(id)
+                .addSnapshotListener(new EventListener<DocumentSnapshot>() {
                     @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        if(task.isSuccessful()) {
-                            for (QueryDocumentSnapshot document : Objects.requireNonNull(task.getResult())) {
-                                currentUserData = document.toObject(Users.class);
+                    public void onEvent(@Nullable DocumentSnapshot snapshot, @Nullable FirebaseFirestoreException e) {
+                        if (e != null) {
+                            Log.d(TAG, "Listen failed.", e);
+                            return;
+                        }
 
-                                if (!currentUserData.getPhotoUrl().equals("")) {
-                                    Glide.with(getApplicationContext())
-                                            .load(storage.getReferenceFromUrl(currentUserData.getPhotoUrl()))
-                                            .placeholder(R.drawable.ic_launcher_foreground)
-                                            .into(profileAvatar);
-                                } else Glide.with(getApplicationContext())
-                                        .load(R.drawable.ic_launcher_foreground)
+                        if (snapshot != null && snapshot.exists()) {
+                            currentUserData = snapshot.toObject(Users.class);
+                            if (!currentUserData.getPhotoUrl().equals("")) {
+                                Glide.with(getApplicationContext())
+                                        .load(storage.getReferenceFromUrl(currentUserData.getPhotoUrl()))
                                         .placeholder(R.drawable.ic_launcher_foreground)
                                         .into(profileAvatar);
+                            } else Glide.with(getApplicationContext())
+                                    .load(R.drawable.ic_launcher_foreground)
+                                    .placeholder(R.drawable.ic_launcher_foreground)
+                                    .into(profileAvatar);
 
-                                profileTitleName.setText(currentUserData.getDisplayName());
-                                profileName.setText(currentUserData.getDisplayName());
-                                profileEmail.setText(currentUserData.getEmail());
-                                profilePhone.setText(currentUserData.getPhone());
-                            }
+                            profileTitleName.setText(currentUserData.getDisplayName());
+                            profileName.setText(currentUserData.getDisplayName());
+                            profileEmail.setText(currentUserData.getEmail());
+                            profilePhone.setText(currentUserData.getPhone());
                         }
                     }
                 });
+//        db.collection("users")
+//                .whereEqualTo("id", id)
+//                .get()
+//                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+//                    @Override
+//                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+//                        if(task.isSuccessful()) {
+//                            for (QueryDocumentSnapshot document : Objects.requireNonNull(task.getResult())) {
+//                                currentUserData = document.toObject(Users.class);
+//
+//                                if (!currentUserData.getPhotoUrl().equals("")) {
+//                                    Glide.with(getApplicationContext())
+//                                            .load(storage.getReferenceFromUrl(currentUserData.getPhotoUrl()))
+//                                            .placeholder(R.drawable.ic_launcher_foreground)
+//                                            .into(profileAvatar);
+//                                } else Glide.with(getApplicationContext())
+//                                        .load(R.drawable.ic_launcher_foreground)
+//                                        .placeholder(R.drawable.ic_launcher_foreground)
+//                                        .into(profileAvatar);
+//
+//                                profileTitleName.setText(currentUserData.getDisplayName());
+//                                profileName.setText(currentUserData.getDisplayName());
+//                                profileEmail.setText(currentUserData.getEmail());
+//                                profilePhone.setText(currentUserData.getPhone());
+//                            }
+//                        }
+//                    }
+//                });
     }
 
     private void setFieldEditable() {
-        profileEditName.setOnClickListener(new View.OnClickListener() {
+        profileEditNameButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 profileName.setEnabled(true);
@@ -171,7 +201,7 @@ public class ProfileActivity extends AppCompatActivity {
             }
         });
 
-        profileEditPhone.setOnClickListener(new View.OnClickListener() {
+        profileEditPhoneButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 profilePhone.setEnabled(true);
@@ -207,18 +237,18 @@ public class ProfileActivity extends AppCompatActivity {
             Glide.with(getApplicationContext())
                     .load(filePath)
                     .into(profileAvatar);
-            profileDecline.setVisibility(View.VISIBLE);
-            profileAccept.setVisibility(View.VISIBLE);
+            profileDeclineButton.setVisibility(View.VISIBLE);
+            profileAcceptButton.setVisibility(View.VISIBLE);
 
         }
     }
 
     private void confirmChangeAvatar() {
-        profileDecline.setOnClickListener(new View.OnClickListener() {
+        profileDeclineButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                profileDecline.setVisibility(View.INVISIBLE);
-                profileAccept.setVisibility(View.INVISIBLE);
+                profileDeclineButton.setVisibility(View.INVISIBLE);
+                profileAcceptButton.setVisibility(View.INVISIBLE);
                 if (!currentUserData.getPhotoUrl().equals("")) {
                     Glide.with(getApplicationContext())
                             .load(storage.getReferenceFromUrl(currentUserData.getPhotoUrl()))
@@ -233,7 +263,7 @@ public class ProfileActivity extends AppCompatActivity {
             }
         });
 
-        profileAccept.setOnClickListener(new View.OnClickListener() {
+        profileAcceptButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 uploadAvatarToStorage();
@@ -247,13 +277,13 @@ public class ProfileActivity extends AppCompatActivity {
             progressDialog.setTitle("Tải lên");
             progressDialog.show();
 
-            StorageReference ref = storageReference.child(id + "_" + System.currentTimeMillis() + "." + getFileExtension(filePath));
+            StorageReference ref = storageReference.child(userId + "." + getFileExtension(filePath));
             ref.putFile(filePath)
                     .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
                         @Override
                         public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                            profileDecline.setVisibility(View.INVISIBLE);
-                            profileAccept.setVisibility(View.INVISIBLE);
+                            profileDeclineButton.setVisibility(View.INVISIBLE);
+                            profileAcceptButton.setVisibility(View.INVISIBLE);
                             progressDialog.dismiss();
 
                             updateAvatarUrlInDatabase(ref.toString());
@@ -329,7 +359,7 @@ public class ProfileActivity extends AppCompatActivity {
                     updateUsersCollection();
                     updateContactsCollection();
 
-                    getUserData(id);
+                    getUserData(userId);
                 }
             }
         });

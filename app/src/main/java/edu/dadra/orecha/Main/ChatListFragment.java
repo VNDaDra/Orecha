@@ -95,7 +95,6 @@ public class ChatListFragment extends Fragment {
 
             @Override
             public void afterTextChanged(Editable s) {
-
             }
         });
 
