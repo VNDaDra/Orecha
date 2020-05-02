@@ -13,6 +13,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -30,7 +31,9 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.storage.FirebaseStorage;
@@ -109,11 +112,11 @@ public class MainActivity extends AppCompatActivity {
         transaction.commit();
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        getCurrentUserData();
-    }
+//    @Override
+//    public void onResume() {
+//        super.onResume();
+//        getCurrentUserData();
+//    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -145,15 +148,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void getCurrentUserData() {
-        db.collection("users")
-                .whereEqualTo("id", firebaseUser.getUid())
-                .get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+        db.collection("users").document(firebaseUser.getUid())
+                .addSnapshotListener(new EventListener<DocumentSnapshot>() {
                     @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        if(task.isSuccessful()) {
-                            for (QueryDocumentSnapshot document : Objects.requireNonNull(task.getResult())) {
-                                currentUserData = document.toObject(Users.class);
+                    public void onEvent(@Nullable DocumentSnapshot snapshot, @Nullable FirebaseFirestoreException e) {
+                        if (e != null) {
+                            Log.w(TAG, "Listen failed.", e);
+                            return;
+                        }
+
+                        if (snapshot != null && snapshot.exists()) {
+                            currentUserData = snapshot.toObject(Users.class);
                                 if (!currentUserData.getPhotoUrl().equals("")) {
                                     Glide.with(getApplicationContext())
                                             .load(storage.getReferenceFromUrl(currentUserData.getPhotoUrl()))
@@ -165,11 +170,34 @@ public class MainActivity extends AppCompatActivity {
                                         .into(currentUserAvatar);
 
                                 mainTitle.setText(currentUserData.getDisplayName());
-
-                            }
                         }
                     }
                 });
+//        db.collection("users")
+//                .whereEqualTo("id", firebaseUser.getUid())
+//                .get()
+//                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+//                    @Override
+//                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+//                        if(task.isSuccessful()) {
+//                            for (QueryDocumentSnapshot document : Objects.requireNonNull(task.getResult())) {
+//                                currentUserData = document.toObject(Users.class);
+//                                if (!currentUserData.getPhotoUrl().equals("")) {
+//                                    Glide.with(getApplicationContext())
+//                                            .load(storage.getReferenceFromUrl(currentUserData.getPhotoUrl()))
+//                                            .placeholder(R.drawable.ic_launcher_foreground)
+//                                            .into(currentUserAvatar);
+//                                } else Glide.with(getApplicationContext())
+//                                        .load(R.drawable.ic_launcher_foreground)
+//                                        .placeholder(R.drawable.ic_launcher_foreground)
+//                                        .into(currentUserAvatar);
+//
+//                                mainTitle.setText(currentUserData.getDisplayName());
+//
+//                            }
+//                        }
+//                    }
+//                });
     }
 
     private void moveToProfileActivity() {
