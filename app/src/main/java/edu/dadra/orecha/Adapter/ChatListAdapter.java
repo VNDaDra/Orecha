@@ -65,6 +65,7 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Friends, ChatListA
     @Override
     public void onDataChanged() {
         super.onDataChanged();
+
     }
 
     public void onBindViewHolder(ViewHolder holder, int position, Friends friend) {
@@ -150,7 +151,7 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Friends, ChatListA
         CollectionReference messagesRef = db.collection("messages").document(roomId)
                 .collection("messagesOfThisRoom");
         Query query = messagesRef.orderBy("time", Query.Direction.DESCENDING);
-        lastMessage = "";
+        lastMessage = "blank";
 
         query.limit(1).get()
                 .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
@@ -162,21 +163,21 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Friends, ChatListA
                                 lastMessage = lastMesObj.getMessage();
                                 date = lastMesObj.getTime().toDate();
                             }
-                            if (lastMessage.equals("")) {
+                            if (lastMessage.equals("blank")) {
                                 lastMessageTextView.setVisibility(View.GONE);
                                 time.setVisibility(View.GONE);
                             } else {
                                 lastMessageTextView.setText(lastMessage);
-                                time.setText(formatDate(date));
+                                time.setText(dateFormat(date));
                             }
 
-                            lastMessage = "";
+                            lastMessage = "blank";
                         }
                     }
                 });
     }
 
-    private String formatDate(Date date) {
+    private String dateFormat(Date date) {
         Date currentDate = Calendar.getInstance().getTime();
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/YYYY");
 
