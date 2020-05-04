@@ -105,18 +105,13 @@ public class MainActivity extends AppCompatActivity {
             return false;
         }
     };
+
     public void openFragment(Fragment fragment) {
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.container, fragment);
         transaction.addToBackStack(null);
         transaction.commit();
     }
-
-//    @Override
-//    public void onResume() {
-//        super.onResume();
-//        getCurrentUserData();
-//    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -153,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onEvent(@Nullable DocumentSnapshot snapshot, @Nullable FirebaseFirestoreException e) {
                         if (e != null) {
-                            Log.w(TAG, "Listen failed.", e);
+                            Log.d(TAG, "Listen failed.", e);
                             return;
                         }
 
@@ -173,31 +168,6 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
                 });
-//        db.collection("users")
-//                .whereEqualTo("id", firebaseUser.getUid())
-//                .get()
-//                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-//                    @Override
-//                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-//                        if(task.isSuccessful()) {
-//                            for (QueryDocumentSnapshot document : Objects.requireNonNull(task.getResult())) {
-//                                currentUserData = document.toObject(Users.class);
-//                                if (!currentUserData.getPhotoUrl().equals("")) {
-//                                    Glide.with(getApplicationContext())
-//                                            .load(storage.getReferenceFromUrl(currentUserData.getPhotoUrl()))
-//                                            .placeholder(R.drawable.ic_launcher_foreground)
-//                                            .into(currentUserAvatar);
-//                                } else Glide.with(getApplicationContext())
-//                                        .load(R.drawable.ic_launcher_foreground)
-//                                        .placeholder(R.drawable.ic_launcher_foreground)
-//                                        .into(currentUserAvatar);
-//
-//                                mainTitle.setText(currentUserData.getDisplayName());
-//
-//                            }
-//                        }
-//                    }
-//                });
     }
 
     private void moveToProfileActivity() {

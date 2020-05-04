@@ -1,9 +1,12 @@
 package edu.dadra.orecha;
 
+import android.content.ContentResolver;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.webkit.MimeTypeMap;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -20,6 +23,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -32,6 +36,7 @@ import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -39,12 +44,13 @@ import java.util.Map;
 import java.util.Objects;
 
 import edu.dadra.orecha.Adapter.ChatAdapter;
-import edu.dadra.orecha.Model.Message;
 import edu.dadra.orecha.Model.Friends;
+import edu.dadra.orecha.Model.Message;
 
 public class ChatActivity extends AppCompatActivity {
 
     private static final String TAG = "ChatActivity";
+    private final int PICK_IMAGE_REQUEST = 1;
 
     private FirebaseUser firebaseUser;
     private FirebaseFirestore db;
@@ -52,17 +58,17 @@ public class ChatActivity extends AppCompatActivity {
     private FirebaseStorage storage;
     private StorageReference storageReference;
 
-
     private RecyclerView chatRecyclerView;
     private ChatAdapter chatAdapter;
 
     private EditText messageField;
-    private ImageButton sendButton;
-    private ImageView friendAvatar;
+    private ImageButton sendButton, chooseImageButton, clearImageButton;
+    private ImageView friendAvatar, previewImage;
     private TextView friendName;
 
     private String roomId, friendId;
     private Timestamp lastMessageTime;
+    private Uri filePath = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,6 +87,10 @@ public class ChatActivity extends AppCompatActivity {
 
         showMessages();
 
+        chooseImage();
+
+        clearImage();
+
         sendButtonListener();
 
         moveToProfileActivity();
@@ -88,8 +98,11 @@ public class ChatActivity extends AppCompatActivity {
 
     private void initLayout() {
         Toolbar toolbar = findViewById(R.id.chat_toolbar);
-        messageField = findViewById(R.id.editText_message);
-        sendButton = findViewById(R.id.iButton_send);
+        messageField = findViewById(R.id.chat_message);
+        previewImage =findViewById(R.id.chat_preview_image);
+        chooseImageButton = findViewById(R.id.chat_choose_image_iButton);
+        clearImageButton = findViewById(R.id.chat_clear_image);
+        sendButton = findViewById(R.id.chat_send_iButton);
         friendAvatar = findViewById(R.id.chat_toolbar_icon);
         friendName = findViewById(R.id.chat_toolbar_title);
 
@@ -108,11 +121,11 @@ public class ChatActivity extends AppCompatActivity {
         db = FirebaseFirestore.getInstance();
         firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
         storage = FirebaseStorage.getInstance();
-        storageReference = storage.getReference();
+        storageReference = storage.getReference("image_message");
     }
 
     private void initRecyclerView () {
-        chatRecyclerView = findViewById(R.id.messages_view);
+        chatRecyclerView = findViewById(R.id.chat_messages_view);
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getApplicationContext());
         linearLayoutManager.setStackFromEnd(true);
         chatRecyclerView.setLayoutManager(linearLayoutManager);
@@ -157,9 +170,53 @@ public class ChatActivity extends AppCompatActivity {
             @Override
             public void onItemRangeInserted(int positionStart, int itemCount) {
                 chatRecyclerView.scrollToPosition(chatAdapter.getItemCount() - 1);
+                chatRecyclerView.setHasFixedSize(true);
             }
         });
         chatRecyclerView.setAdapter(chatAdapter);
+    }
+
+    private void chooseImage() {
+        chooseImageButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent();
+                intent.setType("image/*");
+                intent.setAction(Intent.ACTION_GET_CONTENT);
+                startActivityForResult(Intent.createChooser(intent, "Chọn ảnh"), PICK_IMAGE_REQUEST);
+            }
+        });
+    }
+
+    private void clearImage() {
+        clearImageButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                previewImage.setVisibility(View.GONE);
+                messageField.setVisibility(View.VISIBLE);
+                filePath = null;
+                clearImageButton.setVisibility(View.GONE);
+            }
+        });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK
+                && data != null && data.getData() != null ) {
+            filePath = data.getData();
+            messageField.setVisibility(View.INVISIBLE);
+            previewImage.setVisibility(View.VISIBLE);
+            clearImageButton.setVisibility(View.VISIBLE);
+            previewImage.setImageURI(filePath);
+        }
+    }
+
+    private String getFileExtension(Uri uri) {
+        ContentResolver cR = getContentResolver();
+        MimeTypeMap mimeTypeMap = MimeTypeMap.getSingleton();
+        return mimeTypeMap.getExtensionFromMimeType(cR.getType(uri));
     }
 
     private void sendButtonListener() {
@@ -171,12 +228,77 @@ public class ChatActivity extends AppCompatActivity {
                     lastMessageTime = new Timestamp(new Date());
                     sendMessage(currentMessage);
                     setLastMessageTime();
+                }
+
+                if (currentMessage.equals("") && filePath != null) {
+
+                    clearImageButton.setVisibility(View.GONE);
+                    lastMessageTime = new Timestamp(new Date());
+                    uploadImageToStorage();
+                    setLastMessageTime();
                 } else {
                     messageField.setHint("Hãy nhập một tin nhắn");
                 }
+                messageField.setVisibility(View.VISIBLE);
                 messageField.setText("");
+                filePath = null;
+
             }
         });
+    }
+
+    private void uploadImageToStorage() {
+        if(filePath != null) {
+
+            StorageReference ref = storageReference.child(roomId)
+                    .child(firebaseUser.getUid() + "_" + System.currentTimeMillis() + "." + getFileExtension(filePath));
+            ref.putFile(filePath)
+                    .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                        @Override
+                        public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                            sendImage(ref.toString());
+                            previewImage.setVisibility(View.GONE);
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            Toast.makeText(getApplicationContext(), "Lỗi "+e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+        }
+    }
+
+    private void sendImage(String imageRef) {
+        messagesRef = db.collection("messages").document(roomId)
+                .collection("messagesOfThisRoom");
+        Map<String, Object> messageInfo = new HashMap<>();
+
+        messageInfo.put("senderId", firebaseUser.getUid());
+        messageInfo.put("message", imageRef);
+        messageInfo.put("time", new Timestamp(new Date() ));
+        messageInfo.put("type", "image");
+
+        messagesRef.add(messageInfo)
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Toast.makeText(getApplicationContext(), "Không thể gửi tin nhắn",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+
+    private void setLastMessageTime() {
+        if (lastMessageTime != null) {
+            db.collection("contacts").document(firebaseUser.getUid())
+                    .collection("userContacts").document(friendId)
+                    .update("lastMessageTime", lastMessageTime);
+            db.collection("contacts").document(friendId)
+                    .collection("userContacts").document(firebaseUser.getUid())
+                    .update("lastMessageTime", lastMessageTime);
+        }
     }
 
     private void sendMessage(String message) {
@@ -187,6 +309,7 @@ public class ChatActivity extends AppCompatActivity {
         messageInfo.put("senderId", firebaseUser.getUid());
         messageInfo.put("message", message);
         messageInfo.put("time", new Timestamp(new Date() ));
+        messageInfo.put("type", "text");
 
         messagesRef.add(messageInfo)
                 .addOnFailureListener(new OnFailureListener() {
@@ -220,18 +343,6 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
     }
-
-    private void setLastMessageTime() {
-        if (lastMessageTime != null) {
-            db.collection("contacts").document(firebaseUser.getUid())
-                    .collection("userContacts").document(friendId)
-                    .update("lastMessageTime", lastMessageTime);
-            db.collection("contacts").document(friendId)
-                    .collection("userContacts").document(firebaseUser.getUid())
-                    .update("lastMessageTime", lastMessageTime);
-        }
-    }
-
 
     @Override
     protected void onStart() {

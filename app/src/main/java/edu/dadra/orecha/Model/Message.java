@@ -8,14 +8,16 @@ public class Message {
     private String senderId;
     private String message;
     private Timestamp time;
+    private String type;
 
     public Message() {
     }
 
-    public Message(String senderId, String message, Timestamp time) {
+    public Message(String senderId, String message, Timestamp time, String type) {
         this.senderId = senderId;
         this.message = message;
         this.time = time;
+        this.type = type;
     }
 
     public String getSenderId() {
@@ -40,5 +42,13 @@ public class Message {
 
     public void setTime(Timestamp time) {
         this.time = time;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 }

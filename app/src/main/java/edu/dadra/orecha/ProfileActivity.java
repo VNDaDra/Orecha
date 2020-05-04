@@ -45,7 +45,7 @@ import edu.dadra.orecha.Model.Users;
 public class ProfileActivity extends AppCompatActivity {
 
     private static final String TAG = "ProfileActivity";
-    private final int PICK_IMAGE_REQUEST = 71;
+    private final int PICK_IMAGE_REQUEST = 1;
 
     private FirebaseFirestore db;
     private FirebaseUser firebaseUser;
@@ -162,34 +162,6 @@ public class ProfileActivity extends AppCompatActivity {
                         }
                     }
                 });
-//        db.collection("users")
-//                .whereEqualTo("id", id)
-//                .get()
-//                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-//                    @Override
-//                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-//                        if(task.isSuccessful()) {
-//                            for (QueryDocumentSnapshot document : Objects.requireNonNull(task.getResult())) {
-//                                currentUserData = document.toObject(Users.class);
-//
-//                                if (!currentUserData.getPhotoUrl().equals("")) {
-//                                    Glide.with(getApplicationContext())
-//                                            .load(storage.getReferenceFromUrl(currentUserData.getPhotoUrl()))
-//                                            .placeholder(R.drawable.ic_launcher_foreground)
-//                                            .into(profileAvatar);
-//                                } else Glide.with(getApplicationContext())
-//                                        .load(R.drawable.ic_launcher_foreground)
-//                                        .placeholder(R.drawable.ic_launcher_foreground)
-//                                        .into(profileAvatar);
-//
-//                                profileTitleName.setText(currentUserData.getDisplayName());
-//                                profileName.setText(currentUserData.getDisplayName());
-//                                profileEmail.setText(currentUserData.getEmail());
-//                                profilePhone.setText(currentUserData.getPhone());
-//                            }
-//                        }
-//                    }
-//                });
     }
 
     private void setFieldEditable() {

@@ -7,12 +7,12 @@
     android:paddingEnd="60dp"
     android:clipToPadding="false">
 
-
     <TextView
         android:id="@+id/message_body"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:minWidth="40dp"
+        android:maxWidth="250dp"
         android:background="@drawable/receiver_message"
         android:paddingVertical="5dp"
         android:paddingHorizontal="10dp"
