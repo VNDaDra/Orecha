@@ -27,7 +27,7 @@ import edu.dadra.orecha.R;
 
 public class ChatListFragment extends Fragment {
 
-    private static final String TAG = "ChatListFragment";
+    private final String TAG = "ChatListFragment";
 
     private View chatListFragmentView;
     private RecyclerView chatListRecyclerView;

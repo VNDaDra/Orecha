@@ -5,11 +5,7 @@
         android:icon="@drawable/mail"
         android:title="@string/chat" />
     <item
-        android:id="@+id/navigation_sms"
-        android:icon="@drawable/phone"
-        android:title="@string/group" />
-    <item
-        android:id="@+id/navigation_notifications"
+        android:id="@+id/navigation_contact"
         android:icon="@drawable/person_icon"
         android:title="@string/contact" />
 </menu>

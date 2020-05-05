@@ -230,7 +230,8 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
 
     private void confirmDelete(Friends friend) {
         new MaterialAlertDialogBuilder(context, R.style.AlertDialogTheme)
-                .setTitle("Xác nhận")
+                .setTitle("Xóa ?")
+                .setMessage("Xóa cả tin nhắn với người này")
                 .setNegativeButton("Hủy bỏ", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {

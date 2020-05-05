@@ -42,7 +42,6 @@ import java.util.Objects;
 
 import edu.dadra.orecha.Main.ChatListFragment;
 import edu.dadra.orecha.Main.ContactFragment;
-import edu.dadra.orecha.Main.GroupListFragment;
 import edu.dadra.orecha.Model.Users;
 
 public class MainActivity extends AppCompatActivity {
@@ -93,11 +92,7 @@ public class MainActivity extends AppCompatActivity {
                     fragment = new ChatListFragment();
                     openFragment(fragment);
                     return true;
-                case R.id.navigation_sms:
-                    fragment = new GroupListFragment();
-                    openFragment(fragment);
-                    return true;
-                case R.id.navigation_notifications:
+                case R.id.navigation_contact:
                     fragment = new ContactFragment();
                     openFragment(fragment);
                     return true;
@@ -109,7 +104,6 @@ public class MainActivity extends AppCompatActivity {
     public void openFragment(Fragment fragment) {
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.container, fragment);
-        transaction.addToBackStack(null);
         transaction.commit();
     }
 

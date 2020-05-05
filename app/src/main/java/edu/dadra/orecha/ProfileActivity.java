@@ -116,8 +116,6 @@ public class ProfileActivity extends AppCompatActivity {
         profileEmail.setText("");
         profilePhone.setText("");
 
-        profileDeclineButton.setVisibility(View.INVISIBLE);
-        profileAcceptButton.setVisibility(View.INVISIBLE);
         profileEditEmailButton.setVisibility(View.INVISIBLE); //User can't change email right now
 
         //Friend view
@@ -219,8 +217,8 @@ public class ProfileActivity extends AppCompatActivity {
         profileDeclineButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                profileDeclineButton.setVisibility(View.INVISIBLE);
-                profileAcceptButton.setVisibility(View.INVISIBLE);
+                profileDeclineButton.setVisibility(View.GONE);
+                profileAcceptButton.setVisibility(View.GONE);
                 if (!currentUserData.getPhotoUrl().equals("")) {
                     Glide.with(getApplicationContext())
                             .load(storage.getReferenceFromUrl(currentUserData.getPhotoUrl()))

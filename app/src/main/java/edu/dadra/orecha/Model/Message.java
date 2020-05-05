@@ -5,6 +5,8 @@ import com.google.firebase.firestore.IgnoreExtraProperties;
 
 @IgnoreExtraProperties
 public class Message {
+    private String id;
+    private String roomId;
     private String senderId;
     private String message;
     private Timestamp time;
@@ -13,7 +15,9 @@ public class Message {
     public Message() {
     }
 
-    public Message(String senderId, String message, Timestamp time, String type) {
+    public Message(String id, String roomId, String senderId, String message, Timestamp time, String type) {
+        this.id = id;
+        this.roomId = roomId;
         this.senderId = senderId;
         this.message = message;
         this.time = time;
@@ -50,5 +54,21 @@ public class Message {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getRoomId() {
+        return roomId;
+    }
+
+    public void setRoomId(String roomId) {
+        this.roomId = roomId;
     }
 }

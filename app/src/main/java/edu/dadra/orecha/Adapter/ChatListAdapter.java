@@ -56,7 +56,7 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Friends, ChatListA
 
     private FirebaseUser firebaseUser;
     private FirebaseFirestore db;
-    private String lastMessage;
+    private String lastMessage, type;
     private Date date;
     private FirebaseStorage storage;
 
@@ -159,24 +159,30 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Friends, ChatListA
                     @Override
                     public void onEvent(@Nullable QuerySnapshot querySnapshot, @Nullable FirebaseFirestoreException e) {
                         if (e != null) {
-                            Log.w(TAG, "Listen failed.", e);
+                            Log.d(TAG, "Listen failed.", e);
                             return;
                         }
 
                         for (QueryDocumentSnapshot doc : querySnapshot) {
                             Message lastMesObj = doc.toObject(Message.class);
-                                lastMessage = lastMesObj.getMessage();
-                                date = lastMesObj.getTime().toDate();
+                            lastMessage = lastMesObj.getMessage();
+                            type = lastMesObj.getType();
+                            date = lastMesObj.getTime().toDate();
                         }
                         if (lastMessage.equals("")) {
-                                lastMessageTextView.setVisibility(View.GONE);
-                                time.setVisibility(View.GONE);
-                            } else {
-                                lastMessageTextView.setText(lastMessage);
-                                time.setText(formatDate(date));
-                            }
+                            lastMessageTextView.setVisibility(View.GONE);
+                            time.setVisibility(View.GONE);
+                        }
+                        else if (type.equals("image")) {
+                            lastMessageTextView.setText("[Hình ảnh]");
+                            time.setText(formatDate(date));
+                        }
+                        else {
+                            lastMessageTextView.setText(lastMessage);
+                            time.setText(formatDate(date));
+                        }
 
-                            lastMessage = "";
+                        lastMessage = "";
                     }
                 });
 
@@ -257,7 +263,8 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Friends, ChatListA
 
     private void confirmDelete(Friends friend) {
         new MaterialAlertDialogBuilder(context, R.style.AlertDialogTheme)
-                .setTitle("Xác nhận")
+                .setTitle("Xóa ?")
+                .setMessage("Xóa cả tin nhắn của đối phương")
                 .setNegativeButton("Hủy bỏ", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {

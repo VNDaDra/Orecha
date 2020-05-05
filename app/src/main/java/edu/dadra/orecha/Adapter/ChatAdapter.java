@@ -5,16 +5,21 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.fragment.app.FragmentActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 
 import edu.dadra.orecha.Model.Message;
@@ -27,6 +32,7 @@ public class ChatAdapter extends FirestoreRecyclerAdapter<Message, ChatAdapter.V
     private static final int MSG_IMAGE_LEFT = 2;
     private static final int MSG_IMAGE_RIGHT = 3;
 
+    private FirebaseFirestore db;
     private FirebaseStorage storage;
 
     private Context context;
@@ -48,6 +54,14 @@ public class ChatAdapter extends FirestoreRecyclerAdapter<Message, ChatAdapter.V
                     .into(holder.image);
         }
 
+        holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                showDeleteDialog(message);
+                return true;
+            }
+        });
+
     }
 
     @NonNull
@@ -55,6 +69,7 @@ public class ChatAdapter extends FirestoreRecyclerAdapter<Message, ChatAdapter.V
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view;
         context = parent.getContext();
+        db = FirebaseFirestore.getInstance();
         storage = FirebaseStorage.getInstance();
 
         if(viewType == MSG_TEXT_RIGHT) {
@@ -99,6 +114,35 @@ public class ChatAdapter extends FirestoreRecyclerAdapter<Message, ChatAdapter.V
             message = itemView.findViewById(R.id.message_body);
             image = itemView.findViewById(R.id.message_image);
 
+        }
+    }
+
+    private void showDeleteDialog(Message message) {
+        View view = ((FragmentActivity)context).getLayoutInflater().inflate(R.layout.layout_chat_bottom_sheet, null);
+        BottomSheetDialog dialog = new BottomSheetDialog(context);
+        dialog.setContentView(view);
+        dialog.show();
+
+        LinearLayout deleteMessage = dialog.findViewById(R.id.chat_delete_message);
+        deleteMessage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                deleteMessage(message);
+                dialog.dismiss();
+            }
+        });
+
+    }
+
+    private void deleteMessage(Message message) {
+        DocumentReference messageRef = db.collection("messages").document(message.getRoomId())
+                .collection("messagesOfThisRoom").document(message.getId());
+        if (message.getType().equals("text")) {
+            messageRef.delete();
+        }
+        else {
+            //LATER - delete image in storage
+            messageRef.delete();
         }
     }
 

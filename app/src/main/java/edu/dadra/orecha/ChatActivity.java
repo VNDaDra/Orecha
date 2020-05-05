@@ -54,7 +54,8 @@ public class ChatActivity extends AppCompatActivity {
 
     private FirebaseUser firebaseUser;
     private FirebaseFirestore db;
-    private CollectionReference messagesRef;
+    private CollectionReference allMessageRef;
+    private DocumentReference messagesRef;
     private FirebaseStorage storage;
     private StorageReference storageReference;
 
@@ -117,6 +118,10 @@ public class ChatActivity extends AppCompatActivity {
         friendId = intent.getStringExtra("friendId");
     }
 
+    public String getRoomId() {
+        return roomId;
+    }
+
     private void initFirebase() {
         db = FirebaseFirestore.getInstance();
         firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
@@ -159,9 +164,9 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     private void showMessages() {
-        messagesRef = db.collection("messages").document(roomId)
+        allMessageRef = db.collection("messages").document(roomId)
                 .collection("messagesOfThisRoom");
-        Query query = messagesRef.orderBy("time", Query.Direction.ASCENDING);
+        Query query = allMessageRef.orderBy("time", Query.Direction.ASCENDING);
 
         FirestoreRecyclerOptions<Message> options = new FirestoreRecyclerOptions.Builder<Message>()
                 .setQuery(query, Message.class).build();
@@ -271,15 +276,18 @@ public class ChatActivity extends AppCompatActivity {
 
     private void sendImage(String imageRef) {
         messagesRef = db.collection("messages").document(roomId)
-                .collection("messagesOfThisRoom");
+                .collection("messagesOfThisRoom").document();
+        String messageId = messagesRef.getId();
         Map<String, Object> messageInfo = new HashMap<>();
 
+        messageInfo.put("id", messageId);
+        messageInfo.put("roomId", roomId);
         messageInfo.put("senderId", firebaseUser.getUid());
         messageInfo.put("message", imageRef);
         messageInfo.put("time", new Timestamp(new Date() ));
         messageInfo.put("type", "image");
 
-        messagesRef.add(messageInfo)
+        messagesRef.set(messageInfo)
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
@@ -303,15 +311,18 @@ public class ChatActivity extends AppCompatActivity {
 
     private void sendMessage(String message) {
         messagesRef = db.collection("messages").document(roomId)
-                .collection("messagesOfThisRoom");
+                .collection("messagesOfThisRoom").document();
+        String messageId = messagesRef.getId();
         Map<String, Object> messageInfo = new HashMap<>();
 
+        messageInfo.put("id", messageId);
+        messageInfo.put("roomId", roomId);
         messageInfo.put("senderId", firebaseUser.getUid());
         messageInfo.put("message", message);
         messageInfo.put("time", new Timestamp(new Date() ));
         messageInfo.put("type", "text");
 
-        messagesRef.add(messageInfo)
+        messagesRef.set(messageInfo)
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
