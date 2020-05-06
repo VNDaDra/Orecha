@@ -1,6 +1,7 @@
 package edu.dadra.orecha.Adapter;
 
 import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,6 +14,8 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.request.RequestOptions;
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
@@ -22,6 +25,7 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 
+import edu.dadra.orecha.FullScreenImage;
 import edu.dadra.orecha.Model.Message;
 import edu.dadra.orecha.R;
 
@@ -47,20 +51,42 @@ public class ChatAdapter extends FirestoreRecyclerAdapter<Message, ChatAdapter.V
     protected void onBindViewHolder(@NonNull ViewHolder holder, int position, @NonNull Message message) {
         if (message.getType().equals("text")) {
             holder.message.setText(message.getMessage());
-        }
-        if (message.getType().equals("image")) {
-            Glide.with(context).load(storage.getReferenceFromUrl(message.getMessage()))
-                    .fitCenter()
-                    .into(holder.image);
+            holder.message.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    showDeleteDialog(message);
+                    return true;
+                }
+            });
         }
 
-        holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
-                showDeleteDialog(message);
-                return true;
-            }
-        });
+        if (message.getType().equals("image") && !message.getMessage().equals("")) {
+            RequestOptions options = new RequestOptions()
+                    .fitCenter()
+                    .error(R.drawable.error)
+                    .diskCacheStrategy(DiskCacheStrategy.ALL);
+            Glide.with(context)
+                    .load(storage.getReferenceFromUrl(message.getMessage()))
+                    .apply(options)
+                    .into(holder.image);
+
+            holder.image.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent fullScreenImageIntent = new Intent(context, FullScreenImage.class);
+                    fullScreenImageIntent.putExtra("imageUri", message.getMessage());
+                    context.startActivity(fullScreenImageIntent);
+                }
+            });
+            holder.image.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    showDeleteDialog(message);
+                    return true;
+                }
+            });
+        }
+
 
     }
 
@@ -113,7 +139,6 @@ public class ChatAdapter extends FirestoreRecyclerAdapter<Message, ChatAdapter.V
             super(itemView);
             message = itemView.findViewById(R.id.message_body);
             image = itemView.findViewById(R.id.message_image);
-
         }
     }
 
