@@ -8,11 +8,10 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.Priority;
-import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.RequestOptions;
 import com.google.firebase.storage.FirebaseStorage;
 
-public class FullScreenImage extends AppCompatActivity {
+public class FullScreenImageActivity extends AppCompatActivity {
 
     FirebaseStorage storage;
     String imageUri;
@@ -29,7 +28,6 @@ public class FullScreenImage extends AppCompatActivity {
             RequestOptions options = new RequestOptions()
                     .fitCenter()
                     .error(R.drawable.error)
-                    .diskCacheStrategy(DiskCacheStrategy.ALL)
                     .priority(Priority.HIGH);
             Glide.with(this)
                     .load(storage.getReferenceFromUrl(imageUri))

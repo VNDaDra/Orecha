@@ -4,13 +4,12 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".FullScreenImage">
+    tools:context=".FullScreenImageActivity">
 
     <ImageView
         android:id="@+id/full_screen_image"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_margin="15dp"
         android:scaleType="fitCenter"
         android:adjustViewBounds="true"
         android:src="@drawable/ic_launcher_background"

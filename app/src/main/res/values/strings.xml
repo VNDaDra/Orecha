@@ -32,4 +32,6 @@
     <string name="group">Nhóm</string>
     <string name="preview">Xem trước</string>
     <string name="delete">Xóa</string>
+    <string name="view_avatar">Xem ảnh đại diện</string>
+    <string name="change_avatar">Thay đổi ảnh đại diện</string>
 </resources>

@@ -13,7 +13,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".FullScreenImage"></activity>
+        <activity android:name=".FullScreenImageActivity"></activity>
         <activity android:name=".ProfileActivity" />
         <activity
             android:name=".ChatActivity"

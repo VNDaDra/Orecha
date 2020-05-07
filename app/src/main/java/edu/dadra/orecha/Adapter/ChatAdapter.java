@@ -24,8 +24,9 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
-import edu.dadra.orecha.FullScreenImage;
+import edu.dadra.orecha.FullScreenImageActivity;
 import edu.dadra.orecha.Model.Message;
 import edu.dadra.orecha.R;
 
@@ -73,7 +74,7 @@ public class ChatAdapter extends FirestoreRecyclerAdapter<Message, ChatAdapter.V
             holder.image.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Intent fullScreenImageIntent = new Intent(context, FullScreenImage.class);
+                    Intent fullScreenImageIntent = new Intent(context, FullScreenImageActivity.class);
                     fullScreenImageIntent.putExtra("imageUri", message.getMessage());
                     context.startActivity(fullScreenImageIntent);
                 }
@@ -166,8 +167,9 @@ public class ChatAdapter extends FirestoreRecyclerAdapter<Message, ChatAdapter.V
             messageRef.delete();
         }
         else {
-            //LATER - delete image in storage
             messageRef.delete();
+            StorageReference imageRef = storage.getReferenceFromUrl(message.getMessage());
+            imageRef.delete();
         }
     }
 

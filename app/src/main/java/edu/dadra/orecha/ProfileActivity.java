@@ -14,6 +14,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -26,6 +27,7 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
@@ -44,7 +46,7 @@ import edu.dadra.orecha.Model.Users;
 
 public class ProfileActivity extends AppCompatActivity {
 
-    private static final String TAG = "ProfileActivity";
+    private final String TAG = "ProfileActivity";
     private final int PICK_IMAGE_REQUEST = 1;
 
     private FirebaseFirestore db;
@@ -124,7 +126,7 @@ public class ProfileActivity extends AppCompatActivity {
             profileName.setTextColor(Color.BLACK);
             profilePhone.setTextColor(Color.BLACK);
             //Can't change friend information
-            profileAvatar.setEnabled(false);
+//            profileAvatar.setEnabled(false);
             profileEditNameButton.setVisibility(View.GONE);
             profileEditPhoneButton.setVisibility(View.GONE);
             updateProfileButton.setVisibility(View.GONE);
@@ -185,9 +187,45 @@ public class ProfileActivity extends AppCompatActivity {
         profileAvatar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                chooseImage();
+                if (!userId.equals(firebaseUser.getUid())) {
+                    viewAvatar();
+                }
+                else {
+                    showViewImageDialog();
+                }
             }
         });
+    }
+
+    private void showViewImageDialog() {
+        View view = View.inflate(getApplicationContext(),R.layout.layout_profile_bottom_sheet, null);
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        dialog.setContentView(view);
+        dialog.show();
+
+        LinearLayout updateAvatar = dialog.findViewById(R.id.profile_update_avatar);
+        LinearLayout viewAvatar = dialog.findViewById(R.id.profile_view_avatar);
+
+        updateAvatar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                chooseImage();
+                dialog.dismiss();
+            }
+        });
+        viewAvatar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                viewAvatar();
+                dialog.dismiss();
+            }
+        });
+    }
+
+    private void viewAvatar() {
+        Intent fullScreenImageIntent = new Intent(getApplicationContext(), FullScreenImageActivity.class);
+        fullScreenImageIntent.putExtra("imageUri", currentUserData.getPhotoUrl());
+        startActivity(fullScreenImageIntent);
     }
 
     private void chooseImage() {
@@ -247,7 +285,7 @@ public class ProfileActivity extends AppCompatActivity {
             progressDialog.setTitle("Tải lên");
             progressDialog.show();
 
-            StorageReference ref = storageReference.child(userId + "." + getFileExtension(filePath));
+            StorageReference ref = storageReference.child(userId + "_" + System.currentTimeMillis() +"." + getFileExtension(filePath));
             ref.putFile(filePath)
                     .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
                         @Override
