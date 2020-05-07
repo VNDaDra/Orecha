@@ -10,6 +10,7 @@ import android.webkit.MimeTypeMap;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -35,6 +36,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
@@ -66,6 +68,7 @@ public class ChatActivity extends AppCompatActivity {
     private ImageButton sendButton, chooseImageButton, clearImageButton;
     private ImageView friendAvatar, previewImage;
     private TextView friendName;
+    private ProgressBar sendImageProgress;
 
     private String roomId, friendId;
     private Timestamp lastMessageTime;
@@ -100,9 +103,12 @@ public class ChatActivity extends AppCompatActivity {
     private void initLayout() {
         Toolbar toolbar = findViewById(R.id.chat_toolbar);
         messageField = findViewById(R.id.chat_message);
+
         previewImage =findViewById(R.id.chat_preview_image);
         chooseImageButton = findViewById(R.id.chat_choose_image_iButton);
         clearImageButton = findViewById(R.id.chat_clear_image);
+        sendImageProgress = findViewById(R.id.chat_send_progress);
+
         sendButton = findViewById(R.id.chat_send_iButton);
         friendAvatar = findViewById(R.id.chat_toolbar_icon);
         friendName = findViewById(R.id.chat_toolbar_title);
@@ -116,10 +122,6 @@ public class ChatActivity extends AppCompatActivity {
         Intent intent = getIntent();
         roomId = intent.getStringExtra("roomId");
         friendId = intent.getStringExtra("friendId");
-    }
-
-    public String getRoomId() {
-        return roomId;
     }
 
     private void initFirebase() {
@@ -236,8 +238,9 @@ public class ChatActivity extends AppCompatActivity {
                 }
 
                 if (currentMessage.equals("") && filePath != null) {
-
                     clearImageButton.setVisibility(View.GONE);
+                    sendImageProgress.setVisibility(View.VISIBLE);
+
                     lastMessageTime = new Timestamp(new Date());
                     uploadImageToStorage();
                     setLastMessageTime();
@@ -262,6 +265,7 @@ public class ChatActivity extends AppCompatActivity {
                         @Override
                         public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
                             sendImage(ref.toString());
+                            sendImageProgress.setVisibility(View.GONE);
                             previewImage.setVisibility(View.GONE);
                         }
                     })
@@ -269,6 +273,14 @@ public class ChatActivity extends AppCompatActivity {
                         @Override
                         public void onFailure(@NonNull Exception e) {
                             Toast.makeText(getApplicationContext(), "Lỗi "+e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    })
+                    .addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
+                        @Override
+                        public void onProgress(UploadTask.TaskSnapshot taskSnapshot) {
+                            double progress = (100.0*taskSnapshot.getBytesTransferred()/taskSnapshot
+                                    .getTotalByteCount());
+                            sendImageProgress.setProgress( (int) progress);
                         }
                     });
         }

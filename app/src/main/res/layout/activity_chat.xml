@@ -75,6 +75,18 @@
             android:scaleType="fitCenter"
             android:visibility="gone"/>
 
+        <ProgressBar
+            android:id="@+id/chat_send_progress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingVertical="5dp"
+            android:layout_gravity="bottom"
+            android:indeterminate="false"
+            android:max="100"
+            android:progress="1"
+            android:visibility="gone"
+            style="?android:attr/progressBarStyleHorizontal"/>
+
     </androidx.cardview.widget.CardView>
     <LinearLayout
         android:layout_width="match_parent"
