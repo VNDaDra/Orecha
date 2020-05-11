@@ -42,7 +42,7 @@ import edu.dadra.orecha.R;
 
 public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAdapter.ViewHolder> {
 
-    private static final String TAG = "ContactAdapter";
+    private final String TAG = "ContactAdapter";
     private Context context;
 
     private FirebaseFirestore db;
@@ -121,7 +121,7 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
         Log.d(TAG, Objects.requireNonNull(e.getMessage()));
     }
 
-    public class ViewHolder extends RecyclerView.ViewHolder {
+    class ViewHolder extends RecyclerView.ViewHolder {
         TextView displayName;
         ImageView avatar;
         ImageView menu;
@@ -153,7 +153,6 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
 
         Map<String, Object> roomData = new HashMap<>();
         roomData.put("id", roomId);
-        roomData.put("lastMessageId", "");
 
         //Create roomId in Rooms collection - MY DOCUMENT
         batch.set(myRoomIdRef, roomData);
