@@ -34,4 +34,5 @@
     <string name="delete">Xóa</string>
     <string name="view_avatar">Xem ảnh đại diện</string>
     <string name="change_avatar">Thay đổi ảnh đại diện</string>
+    <string name="friend_request">Lời mời kết bạn</string>
 </resources>

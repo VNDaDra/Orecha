@@ -53,7 +53,7 @@
                 android:layout_gravity="bottom"
                 app:itemIconSize="32dp"
                 app:labelVisibilityMode="selected"
-                app:menu="@menu/main_menu"/>
+                app:menu="@menu/main_bottom_navigate"/>
         </FrameLayout>
 
 

@@ -1,5 +1,6 @@
 package edu.dadra.orecha.Main;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -7,6 +8,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -22,6 +24,7 @@ import com.google.firebase.firestore.Query;
 import java.util.Objects;
 
 import edu.dadra.orecha.Adapter.ContactAdapter;
+import edu.dadra.orecha.FriendRequestList;
 import edu.dadra.orecha.Model.Friends;
 import edu.dadra.orecha.R;
 
@@ -31,14 +34,13 @@ public class ContactFragment extends Fragment {
 
     private View contactFragmentView;
     private RecyclerView contactRecyclerView;
-    private LinearLayoutManager linearLayoutManager;
-    ContactAdapter contactAdapter;
+    private ContactAdapter contactAdapter;
 
     private FirebaseUser firebaseUser;
     private FirebaseFirestore db;
-    private CollectionReference contactsRef;
 
     private EditText searchBar;
+    private LinearLayout friendRequest;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -51,9 +53,19 @@ public class ContactFragment extends Fragment {
         contactFragmentView = inflater.inflate(R.layout.fragment_contact, container, false);
 
         init();
-        searchBar = contactFragmentView.findViewById(R.id.contact_search_bar);
 
-        contactsRef = db.collection("contacts").document(firebaseUser.getUid())
+        searchBar = contactFragmentView.findViewById(R.id.contact_search_bar);
+        friendRequest = contactFragmentView.findViewById(R.id.list_friend_request);
+
+        friendRequest.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getActivity().getApplicationContext(), FriendRequestList.class);
+                startActivity(intent);
+            }
+        });
+
+        CollectionReference contactsRef = db.collection("contacts").document(firebaseUser.getUid())
                 .collection("userContacts");
         Query query = contactsRef.orderBy("email", Query.Direction.ASCENDING);
 
@@ -101,7 +113,7 @@ public class ContactFragment extends Fragment {
 
     private void init() {
         contactRecyclerView = contactFragmentView.findViewById(R.id.rv_contact);
-        linearLayoutManager = new LinearLayoutManager(Objects.requireNonNull(getActivity()).getApplicationContext(),
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(Objects.requireNonNull(getActivity()).getApplicationContext(),
                 LinearLayoutManager.VERTICAL, false);
         contactRecyclerView.setLayoutManager(linearLayoutManager);
         db = FirebaseFirestore.getInstance();

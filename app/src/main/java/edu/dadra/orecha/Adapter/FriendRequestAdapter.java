@@ -17,7 +17,6 @@ import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.storage.FirebaseStorage;
@@ -36,7 +35,6 @@ public class FriendRequestAdapter extends FirestoreRecyclerAdapter <FriendReques
 
     private FirebaseFirestore db;
     private FirebaseUser firebaseUser;
-    private DocumentReference friendIdRef, myIdRef;
     private FirebaseStorage storage;
 
     public FriendRequestAdapter(@Nonnull FirestoreRecyclerOptions<FriendRequest> options) {
@@ -45,7 +43,7 @@ public class FriendRequestAdapter extends FirestoreRecyclerAdapter <FriendReques
 
     @Override
     protected void onBindViewHolder(@NonNull ViewHolder holder, int position, FriendRequest friendRequest) {
-        holder.displayName.setText(friendRequest.getSenderId());
+        holder.displayName.setText(friendRequest.getSenderName());
 
         if (!friendRequest.getSenderAvatar().equals("")) {
             Glide.with(context)
@@ -60,14 +58,14 @@ public class FriendRequestAdapter extends FirestoreRecyclerAdapter <FriendReques
 
     @NonNull
     @Override
-    public FriendRequestAdapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_friend_request, parent, false);
         context = parent.getContext();
         db = FirebaseFirestore.getInstance();
         firebaseUser  = FirebaseAuth.getInstance().getCurrentUser();
         storage = FirebaseStorage.getInstance();
-        return new FriendRequestAdapter.ViewHolder(view);
+        return new ViewHolder(view);
     }
 
     @Override

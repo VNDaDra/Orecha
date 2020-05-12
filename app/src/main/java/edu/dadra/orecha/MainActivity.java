@@ -23,10 +23,12 @@ import androidx.fragment.app.FragmentTransaction;
 import com.bumptech.glide.Glide;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
@@ -38,6 +40,9 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.storage.FirebaseStorage;
 
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 import edu.dadra.orecha.Main.ChatListFragment;
@@ -265,6 +270,26 @@ public class MainActivity extends AppCompatActivity {
         myIdRef.update("roomId", "");
     }
 
+    private void sendFriendRequest(QueryDocumentSnapshot doc) {
+        DocumentReference friendRequestRef = db.collection("friendRequest").document(doc.getId())
+                .collection("listOfFriendRequest").document(currentUserData.getId());
+        Map<String, Object> requestInfo = new HashMap<>();
+        requestInfo.put("senderId", currentUserData.getId());
+        requestInfo.put("senderName", currentUserData.getDisplayName());
+        requestInfo.put("receiverId", doc.getId());
+        requestInfo.put("state", "waiting");
+        requestInfo.put("senderAvatar", currentUserData.getPhotoUrl());
+        requestInfo.put("time", new Timestamp(new Date() ));
+
+        friendRequestRef.set(requestInfo)
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        Toast.makeText(getApplicationContext(), "Đã gửi yêu cầu kết bạn", Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
     private void validateFriend(QueryDocumentSnapshot doc) {
         friendIdRef = db.collection("contacts").document(firebaseUser.getUid())
                 .collection("userContacts").document(doc.getId());
@@ -275,9 +300,10 @@ public class MainActivity extends AppCompatActivity {
                 if(task.isSuccessful()) {
                     DocumentSnapshot document = task.getResult();
                     if (!document.exists() && !doc.getId().equals(firebaseUser.getUid())) {
-                        updateMyContact(doc);
-                        updateFriendContact(doc);
-                        Toast.makeText(getApplicationContext(), "Thêm bạn thành công", Toast.LENGTH_SHORT).show();
+//                        updateMyContact(doc);
+//                        updateFriendContact(doc);
+                        sendFriendRequest(doc);
+//                        Toast.makeText(getApplicationContext(), "Thêm bạn thành công", Toast.LENGTH_SHORT).show();
                         Log.d(TAG, "addFriend Successful");
                     } else {
                         Toast.makeText(getApplicationContext(), "Người này đã có trong danh bạ", Toast.LENGTH_SHORT).show();
