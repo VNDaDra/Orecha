@@ -22,7 +22,6 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.bumptech.glide.Glide;
 import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -206,7 +205,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 String friendEmail = addFriendEmailField.getEditText().getText().toString().trim();
                 if (friendEmail.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-                    addFriend(friendEmail);
+                    findUser(friendEmail);
                     dialog.dismiss();
                 } else {
                     addFriendEmailField.setError("Không hợp lệ");
@@ -215,7 +214,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void addFriend(String friendEmail) {
+    private void findUser (String friendEmail) {
 
         db.collection("users")
                 .whereEqualTo("email", friendEmail)
@@ -230,44 +229,33 @@ public class MainActivity extends AppCompatActivity {
                                 Log.d(TAG, "Error getting documents: ", task.getException());
                             } else {
                                 for (QueryDocumentSnapshot document : Objects.requireNonNull(task.getResult())) {
-                                    validateFriend(document);
+                                    validateExistFriend(document);
                                 }
                             }
-
                         }
-
                     }
                 });
     }
 
-    private void updateMyContact(QueryDocumentSnapshot doc) {
+        private void validateExistFriend(QueryDocumentSnapshot doc) {
         friendIdRef = db.collection("contacts").document(firebaseUser.getUid())
                 .collection("userContacts").document(doc.getId());
 
-        friendIdRef.set(doc.getData())
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Log.d(TAG, "updateMyContact error", e);
+        friendIdRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+            @Override
+            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                if(task.isSuccessful()) {
+                    DocumentSnapshot document = task.getResult();
+                    if (!document.exists() && !doc.getId().equals(firebaseUser.getUid())) {
+                        sendFriendRequest(doc);
+                        Log.d(TAG, "Send request Successful");
+                    } else {
+                        Toast.makeText(getApplicationContext(), "Người này đã có trong danh bạ", Toast.LENGTH_SHORT).show();
+                        Log.d(TAG, "validateFiend: Failed");
                     }
-                });
-        friendIdRef.update("hasChat", false);
-        friendIdRef.update("roomId", "");
-    }
-
-    private void updateFriendContact(QueryDocumentSnapshot doc) {
-        DocumentReference myIdRef = db.collection("contacts").document(doc.getId())
-                .collection("userContacts").document(firebaseUser.getUid());
-
-        myIdRef.set(currentUserData)
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Log.d(TAG, "updateFriendContact error", e);
-                    }
-                });
-        myIdRef.update("hasChat", false);
-        myIdRef.update("roomId", "");
+                }
+            }
+        });
     }
 
     private void sendFriendRequest(QueryDocumentSnapshot doc) {
@@ -288,30 +276,6 @@ public class MainActivity extends AppCompatActivity {
                         Toast.makeText(getApplicationContext(), "Đã gửi yêu cầu kết bạn", Toast.LENGTH_SHORT).show();
                     }
                 });
-    }
-
-    private void validateFriend(QueryDocumentSnapshot doc) {
-        friendIdRef = db.collection("contacts").document(firebaseUser.getUid())
-                .collection("userContacts").document(doc.getId());
-
-        friendIdRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
-            @Override
-            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
-                if(task.isSuccessful()) {
-                    DocumentSnapshot document = task.getResult();
-                    if (!document.exists() && !doc.getId().equals(firebaseUser.getUid())) {
-//                        updateMyContact(doc);
-//                        updateFriendContact(doc);
-                        sendFriendRequest(doc);
-//                        Toast.makeText(getApplicationContext(), "Thêm bạn thành công", Toast.LENGTH_SHORT).show();
-                        Log.d(TAG, "addFriend Successful");
-                    } else {
-                        Toast.makeText(getApplicationContext(), "Người này đã có trong danh bạ", Toast.LENGTH_SHORT).show();
-                        Log.d(TAG, "validateFiend: Failed");
-                    }
-                }
-            }
-        });
     }
 
     public void logout() {

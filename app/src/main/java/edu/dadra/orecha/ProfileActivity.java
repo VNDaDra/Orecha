@@ -8,6 +8,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.webkit.MimeTypeMap;
 import android.widget.Button;
@@ -21,6 +22,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
 import com.bumptech.glide.Glide;
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -86,6 +88,17 @@ public class ProfileActivity extends AppCompatActivity {
 
     }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                finish();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
     private void initFirebase() {
         db = FirebaseFirestore.getInstance();
         firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
@@ -94,6 +107,7 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void initLayout() {
+        Toolbar toolbar = findViewById(R.id.profile_toolbar);
         profileAvatar = findViewById(R.id.profile_avatar);
         profileTitleName = findViewById(R.id.profile_title_name);
         profileDeclineButton = findViewById(R.id.profile_decline);
@@ -108,6 +122,10 @@ public class ProfileActivity extends AppCompatActivity {
         profileEditPhoneButton = findViewById(R.id.profile_edit_phone);
 
         updateProfileButton = findViewById(R.id.profile_update);
+
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         profileName.setEnabled(false);
         profileEmail.setEnabled(false);
