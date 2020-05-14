@@ -31,11 +31,11 @@ import java.util.Map;
 
 public class RegisterActivity extends AppCompatActivity {
 
-    private static final String TAG = "RegisterActivity";
+    private final String TAG = "RegisterActivity";
 
     private TextInputLayout emailField, passwordField, rePasswordField;
     private Button registerButton;
-    private TextView statusRegister, hintRegisterText;
+    private TextView hintRegisterText;
     private String hintString;
 
     private AlertDialog.Builder builder;
@@ -54,7 +54,6 @@ public class RegisterActivity extends AppCompatActivity {
         passwordField = findViewById(R.id.registerPasswordEditText);
         rePasswordField = findViewById(R.id.registerRePasswordEditText);
         registerButton = findViewById(R.id.registerButton);
-        statusRegister = findViewById(R.id.registerStatusTextView);
         hintRegisterText = findViewById(R.id.hintRegisterTextView);
 
         builder = new AlertDialog.Builder(this);
@@ -65,9 +64,7 @@ public class RegisterActivity extends AppCompatActivity {
 
         mAuth = FirebaseAuth.getInstance();
 
-        hintString = "Đã có tài khoản ? [Đăng nhập ngay]";
-        int i1 = hintString.indexOf("[");
-        int i2 = hintString.indexOf("]");
+        hintString = "Đã có tài khoản";
         hintRegisterText.setMovementMethod(LinkMovementMethod.getInstance());
         hintRegisterText.setText(hintString, TextView.BufferType.SPANNABLE);
         Spannable registerSpannable = (Spannable) hintRegisterText.getText();
@@ -78,27 +75,17 @@ public class RegisterActivity extends AppCompatActivity {
                 moveToLoginActivity();
             }
         };
-        registerSpannable.setSpan(registerClickableSpan, i1+1, i2, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        registerSpannable.setSpan(registerClickableSpan, 0, registerSpannable.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 
         registerButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                authEmail = emailField.getEditText().getText().toString();
-                authPassword = passwordField.getEditText().getText().toString();
+                authEmail = emailField.getEditText().getText().toString().trim();
+                authPassword = passwordField.getEditText().getText().toString().trim();
                 createAccount(authEmail, authPassword);
             }
         });
 
-    }
-
-    @Override
-    public void onStart() {
-        super.onStart();
-//         Check if user is signed in (non-null) and update UI accordingly.
-//        FirebaseUser currentUser = mAuth.getCurrentUser();
-//        if (currentUser != null) {
-//            startActivity(new Intent(getApplicationContext(), MainActivity.class));
-//        }
     }
 
     private void createAccount(String email, String password) {
@@ -120,14 +107,12 @@ public class RegisterActivity extends AppCompatActivity {
                             Toast.makeText(RegisterActivity.this, "Đăng kí thành công",
                                     Toast.LENGTH_SHORT).show();
                         } else {
-                            Log.w(TAG,"Create failed");
+                            Log.d(TAG,"Create failed");
                             Toast.makeText(RegisterActivity.this, "Đăng kí thất bại! Vui lòng kiểm tra lại thông tin",
                                     Toast.LENGTH_SHORT).show();
                         }
 
                         progressDialog.dismiss();
-
-
                     }
                 });
     }
@@ -135,7 +120,7 @@ public class RegisterActivity extends AppCompatActivity {
     private boolean validateForm() {
         boolean valid = true;
 
-        String email = emailField.getEditText().getText().toString();
+        String email = emailField.getEditText().getText().toString().trim();
         if (TextUtils.isEmpty(email)) {
             emailField.setError("Không để trống");
             valid = false;
@@ -143,7 +128,7 @@ public class RegisterActivity extends AppCompatActivity {
             emailField.setError(null);
         }
 
-        String password = passwordField.getEditText().getText().toString();
+        String password = passwordField.getEditText().getText().toString().trim();
         if (TextUtils.isEmpty(password) || (password.length()<6)) {
             passwordField.setError("Không để trống và có ít nhất 6 kí tự");
             valid = false;
@@ -151,7 +136,7 @@ public class RegisterActivity extends AppCompatActivity {
             passwordField.setError(null);
         }
 
-        String rePassword = rePasswordField.getEditText().getText().toString();
+        String rePassword = rePasswordField.getEditText().getText().toString().trim();
         if (TextUtils.isEmpty(rePassword)) {
             rePasswordField.setError("Không để trống");
             valid = false;
@@ -188,7 +173,7 @@ public class RegisterActivity extends AppCompatActivity {
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        Log.w(TAG, "Error writing document", e);
+                        Log.d(TAG, "Error writing document", e);
                     }
                 });
 

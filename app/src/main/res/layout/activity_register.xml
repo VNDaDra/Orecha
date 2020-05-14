@@ -32,6 +32,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textSize="16sp"
+                android:inputType="textEmailAddress"
                 android:maxLines="1"/>
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -62,6 +63,7 @@
             android:layout_marginBottom="8dp"
             android:autofillHints=""
             android:hint="@string/retype_password"
+            app:endIconMode="password_toggle"
             app:startIconDrawable="@drawable/lock_icon">
             <com.google.android.material.textfield.TextInputEditText
                 android:layout_width="match_parent"
@@ -78,12 +80,6 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
             android:text="@string/register_button"/>
-
-        <TextView
-            android:id="@+id/registerStatusTextView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp" />
 
         <TextView
             android:id="@+id/hintRegisterTextView"

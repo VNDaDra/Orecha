@@ -56,7 +56,6 @@ public class ChatActivity extends AppCompatActivity {
 
     private FirebaseUser firebaseUser;
     private FirebaseFirestore db;
-    private CollectionReference allMessageRef;
     private DocumentReference messagesRef;
     private FirebaseStorage storage;
     private StorageReference storageReference;
@@ -89,7 +88,7 @@ public class ChatActivity extends AppCompatActivity {
 
         showFriendInformation();
 
-        showMessages();
+        displayMessages();
 
         chooseImage();
 
@@ -165,8 +164,8 @@ public class ChatActivity extends AppCompatActivity {
         });
     }
 
-    private void showMessages() {
-        allMessageRef = db.collection("messages").document(roomId)
+    private void displayMessages() {
+        CollectionReference allMessageRef = db.collection("messages").document(roomId)
                 .collection("messagesOfThisRoom");
         Query query = allMessageRef.orderBy("time", Query.Direction.ASCENDING);
 

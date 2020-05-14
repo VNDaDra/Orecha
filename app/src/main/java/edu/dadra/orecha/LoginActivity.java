@@ -54,20 +54,18 @@ public class LoginActivity extends AppCompatActivity {
         progressDialog = builder.create();
         progressDialog.dismiss();
 
-        hintString = "Chưa có tài khoản ? [Tạo ngay]";
-        int i1 = hintString.indexOf("[");
-        int i2 = hintString.indexOf("]");
+        hintString = "Chưa có tài khoản";
         hintLoginText.setMovementMethod(LinkMovementMethod.getInstance());
         hintLoginText.setText(hintString, TextView.BufferType.SPANNABLE);
-        Spannable registerSpannable = (Spannable) hintLoginText.getText();
+        Spannable loginSpannable = (Spannable) hintLoginText.getText();
 
         ClickableSpan registerClickableSpan = new ClickableSpan() {
             @Override
             public void onClick(View view) {
-                startActivity(new Intent(LoginActivity.this, RegisterActivity.class));
+                moveToRegisterActivity();
             }
         };
-        registerSpannable.setSpan(registerClickableSpan, i1+1, i2, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        loginSpannable.setSpan(registerClickableSpan, 0, loginSpannable.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -104,11 +102,11 @@ public class LoginActivity extends AppCompatActivity {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
-                            Log.d("signIn", "signInWithEmail: success");
+                            Log.d("Login", "logInWithEmail: success");
                             FirebaseUser user = mAuth.getCurrentUser();
                             moveToMainActivity();
                         } else {
-                            Log.w("signIn", "signInWithEmail: fail");
+                            Log.d("Login", "logInWithEmail: fail");
                             Toast.makeText(LoginActivity.this, "Không thể xác nhận người dùng",
                                     Toast.LENGTH_SHORT).show();
                         }
@@ -141,12 +139,16 @@ public class LoginActivity extends AppCompatActivity {
         return valid;
     }
 
+    private void moveToRegisterActivity() {
+        Intent registerIntent = new Intent(getApplicationContext(), RegisterActivity.class);
+        registerIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(registerIntent);
+    }
+
     private void moveToMainActivity() {
         Intent mainIntent = new Intent(getApplicationContext(), MainActivity.class);
         mainIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(mainIntent);
         finish();
     }
-
-
 }

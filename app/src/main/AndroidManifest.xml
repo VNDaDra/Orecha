@@ -8,12 +8,14 @@
 
     <application
         android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/orecha_launcher"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@mipmap/orecha_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".FriendRequestList"/>
+        <activity
+            android:name=".FriendRequestList"
+            android:parentActivityName=".MainActivity"/>
         <activity android:name=".FullScreenImageActivity" />
         <activity
             android:name=".ProfileActivity"

@@ -3,6 +3,7 @@ package edu.dadra.orecha;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -49,13 +50,17 @@ public class FriendRequestList extends AppCompatActivity {
     }
 
     private void init() {
+        Toolbar toolbar = findViewById(R.id.friend_request_toolbar);
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
         friendRequestRecyclerView = findViewById(R.id.friend_request_rv);
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getApplicationContext(),
                 LinearLayoutManager.VERTICAL, false);
         friendRequestRecyclerView.setLayoutManager(linearLayoutManager);
         db = FirebaseFirestore.getInstance();
         firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
-
     }
 
     @Override

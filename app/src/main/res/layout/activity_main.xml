@@ -29,7 +29,7 @@
                 android:id="@+id/main_toolbar_icon"
                 android:layout_width="45dp"
                 android:layout_height="45dp"
-                android:src="@drawable/ic_launcher_foreground"/>
+                android:src="@drawable/orange"/>
 
             <TextView
                 android:id="@+id/main_toolbar_title"

@@ -13,7 +13,16 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/toolbar_gradient"
-        android:fitsSystemWindows="true"/>
+        android:fitsSystemWindows="true">
+
+        <TextView
+            android:id="@+id/profile_toolbar_title"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:text="@string/profile"
+            android:textColor="@android:color/white"
+            style="@style/TextAppearance.AppCompat.Widget.ActionBar.Title"/>
+    </androidx.appcompat.widget.Toolbar>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -27,7 +36,7 @@
             android:id="@+id/profile_avatar"
             android:layout_width="80dp"
             android:layout_height="80dp"
-            android:src="@drawable/ic_launcher_foreground"
+            android:src="@drawable/orange"
             app:civ_border_width="1dp"
             app:civ_border_color="@android:color/white"/>
 
@@ -52,17 +61,17 @@
 
             <ImageButton
                 android:id="@+id/profile_decline"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginEnd="50dp"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_marginEnd="45dp"
                 android:src="@drawable/clear"
                 android:visibility="gone"
                 android:background="?android:selectableItemBackground"
                 android:contentDescription="@string/accept" />
             <ImageButton
                 android:id="@+id/profile_accept"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
                 android:src="@drawable/done"
                 android:visibility="gone"
                 android:background="?android:selectableItemBackground"
@@ -105,23 +114,6 @@
                 android:text="@string/placeholder_message"
                 android:textSize="16sp"
                 android:inputType="textEmailAddress" />
-<!--            <com.google.android.material.textfield.TextInputLayout-->
-<!--                android:id="@+id/profile_email"-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:layout_marginEnd="8dp"-->
-<!--                android:layout_weight="0.8"-->
-<!--                android:autofillHints=""-->
-<!--                android:inputType="textEmailAddress"-->
-<!--                app:boxBackgroundMode="none"-->
-<!--                style="@style/FillRoundEditText">-->
-<!--                <EditText-->
-<!--                    android:layout_width="match_parent"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:text="@string/placeholder_message"-->
-<!--                    android:textSize="16sp"-->
-<!--                    android:maxLines="1"/>-->
-<!--            </com.google.android.material.textfield.TextInputLayout>-->
 
             <ImageButton
                 android:id="@+id/profile_edit_email"
