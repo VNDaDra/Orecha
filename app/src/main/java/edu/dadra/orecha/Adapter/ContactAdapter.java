@@ -47,7 +47,6 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
 
     private FirebaseFirestore db;
     private FirebaseUser firebaseUser;
-    private DocumentReference friendIdRef, myIdRef;
     private FirebaseStorage storage;
 
     public ContactAdapter(@NonNull FirestoreRecyclerOptions<Friends> options) {
@@ -60,20 +59,21 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
         if (!friend.getPhotoUrl().equals("")) {
             Glide.with(context)
                     .load(storage.getReferenceFromUrl(friend.getPhotoUrl()))
-                    .placeholder(R.drawable.ic_launcher_foreground)
+                    .placeholder(R.drawable.orange)
                     .into(holder.avatar);
         } else Glide.with(context)
-                .load(R.drawable.ic_launcher_foreground)
-                .placeholder(R.drawable.ic_launcher_foreground)
+                .load(R.drawable.orange)
+                .placeholder(R.drawable.orange)
                 .into(holder.avatar);
 
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (friend.getRoomId().equals("")) {
+                if (!friend.getHasChat()) {
                     createChatRoom(friend);
+
                 } else {
-                    startChatRoom(friend);
+                    startChatRoom(friend, friend.getRoomId());
                 }
             }
         });
@@ -134,10 +134,10 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
 
     }
 
-    private void startChatRoom(Friends friend) {
+    private void startChatRoom(Friends friend, String roomId) {
         Intent chatIntent = new Intent(context, ChatActivity.class);
         chatIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        chatIntent.putExtra("roomId", friend.getRoomId());
+        chatIntent.putExtra("roomId", roomId);
         chatIntent.putExtra("displayName", friend.getDisplayName());
         chatIntent.putExtra("friendId", friend.getId());
         chatIntent.putExtra("friendAvatar", friend.getPhotoUrl());
@@ -147,30 +147,23 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
     private void createChatRoom(Friends friend) {
         WriteBatch batch = db.batch();
 
-        DocumentReference myRoomIdRef = db.collection("rooms").document(firebaseUser.getUid())
-                .collection("userRooms").document();
-        String roomId = myRoomIdRef.getId();
+        DocumentReference roomIdRef = db.collection("rooms").document();
+        String roomId = roomIdRef.getId();
 
         Map<String, Object> roomData = new HashMap<>();
         roomData.put("id", roomId);
 
-        //Create roomId in Rooms collection - MY DOCUMENT
-        batch.set(myRoomIdRef, roomData);
-
-        //Create roomId in Rooms collection - FRIEND DOCUMENT
-        DocumentReference roomId_friend_roomsCollection = db.collection("rooms").document(friend.getId())
-                .collection("userRooms").document(roomId);
-        batch.set(roomId_friend_roomsCollection, roomData);
+        batch.set(roomIdRef, roomData);
 
         //Update chat information in MY contact collection
-        friendIdRef = db.collection("contacts").document(firebaseUser.getUid())
+        DocumentReference friendIdRef = db.collection("contacts").document(firebaseUser.getUid())
                 .collection("userContacts").document(friend.getId());
         batch.update(friendIdRef, "roomId", roomId);
         batch.update(friendIdRef, "hasChat", true);
         batch.update(friendIdRef, "lastMessageTime", null);
 
         //Update chat information in FRIEND contact collection
-        myIdRef = db.collection("contacts").document(friend.getId())
+        DocumentReference myIdRef = db.collection("contacts").document(friend.getId())
                 .collection("userContacts").document(firebaseUser.getUid());
         batch.update(myIdRef, "roomId", roomId);
         batch.update(myIdRef, "hasChat", true);
@@ -179,15 +172,15 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
         batch.commit().addOnCompleteListener(new OnCompleteListener<Void>() {
             @Override
             public void onComplete(@NonNull Task<Void> task) {
-                Toast.makeText(context, "Tạo phòng thành công", Toast.LENGTH_SHORT).show();
+                startChatRoom(friend, roomId);
+                Log.d(TAG, "Create RoomId complete");
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception e) {
-                Toast.makeText(context, "Lỗi", Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "Create RoomId fail");
             }
         });
-
     }
 
     private void moveToProfileActivity(Friends friend) {
@@ -201,23 +194,24 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
         WriteBatch batch = db.batch();
         String roomId = friend.getRoomId();
 
-        friendIdRef = db.collection("contacts").document(firebaseUser.getUid())
+        DocumentReference friendIdRef = db.collection("contacts").document(firebaseUser.getUid())
                 .collection("userContacts").document(friend.getId());
-        myIdRef = db.collection("contacts").document(friend.getId())
+        DocumentReference myIdRef = db.collection("contacts").document(friend.getId())
                 .collection("userContacts").document(firebaseUser.getUid());
 
-        DocumentReference roomId_my_roomsCollection = db.collection("rooms").document(firebaseUser.getUid())
-                .collection("userRooms").document(roomId);
-        DocumentReference roomId_friend_roomsCollection = db.collection("rooms").document(friend.getId())
-                .collection("userRooms").document(roomId);
-        //Can't delete all messages of roomId because it has sub-collection **Firestore Limitation**
-        DocumentReference roomId_messagesCollection = db.collection("messages").document(roomId);
+        try {
+            DocumentReference roomIdRef = db.collection("rooms").document(roomId);
+            batch.delete(roomIdRef);
+        } catch (IllegalArgumentException ex) {
+            Log.d(TAG, "Have no room");
+        }
+
+        //Can't delete all messages of roomId because it has sub-collection **FireStore Limitation**
+//        DocumentReference roomId_messagesCollection = db.collection("messages").document(roomId);
+//        batch.delete(roomId_messagesCollection);
 
         batch.delete(friendIdRef);
         batch.delete(myIdRef);
-        batch.delete(roomId_my_roomsCollection);
-        batch.delete(roomId_friend_roomsCollection);
-        batch.delete(roomId_messagesCollection);
 
         batch.commit().addOnCompleteListener(new OnCompleteListener<Void>() {
             @Override

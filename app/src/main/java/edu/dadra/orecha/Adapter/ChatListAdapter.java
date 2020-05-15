@@ -75,11 +75,11 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Friends, ChatListA
         if (!friend.getPhotoUrl().equals("")) {
             Glide.with(context)
                     .load(storage.getReferenceFromUrl(friend.getPhotoUrl()))
-                    .placeholder(R.drawable.ic_launcher_foreground)
+                    .placeholder(R.drawable.orange)
                     .into(holder.avatar);
         } else Glide.with(context)
-                .load(R.drawable.ic_launcher_foreground)
-                .placeholder(R.drawable.ic_launcher_foreground)
+                .load(R.drawable.orange)
+                .placeholder(R.drawable.orange)
                 .into(holder.avatar);
 
         getLastMessage(friend.getRoomId(), holder.lastMessageTextView, holder.time);
@@ -135,7 +135,7 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Friends, ChatListA
         Log.d(TAG, Objects.requireNonNull(e.getMessage()));
     }
 
-    public class ViewHolder extends RecyclerView.ViewHolder {
+    class ViewHolder extends RecyclerView.ViewHolder {
         TextView displayName, lastMessageTextView, time;
         ImageView avatar;
         ViewHolder(View itemView) {
@@ -237,16 +237,14 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Friends, ChatListA
         batch.update(myIdRef, "lastMessageTime", null);
 
         //Delete room in rooms collection
-        DocumentReference roomId_my_roomsCollection = db.collection("rooms").document(firebaseUser.getUid())
-                .collection("userRooms").document(roomId);
-        DocumentReference roomId_friend_roomsCollection = db.collection("rooms").document(friend.getId())
-                .collection("userRooms").document(roomId);
+        DocumentReference roomId_my_roomsCollection = db.collection("rooms").document(roomId);
+        DocumentReference roomId_friend_roomsCollection = db.collection("rooms").document(roomId);
         batch.delete(roomId_my_roomsCollection);
         batch.delete(roomId_friend_roomsCollection);
 
-        //Delete message in messages collection
-        DocumentReference roomId_messageCollection = db.collection("message").document(roomId);
-        batch.delete(roomId_messageCollection);
+        //Can't delete all messages of roomId because it has sub-collection **FireStore Limitation**
+//        DocumentReference roomId_messageCollection = db.collection("message").document(roomId);
+//        batch.delete(roomId_messageCollection);
 
         batch.commit().addOnCompleteListener(new OnCompleteListener<Void>() {
             @Override

@@ -24,7 +24,7 @@ import com.google.firebase.firestore.Query;
 import java.util.Objects;
 
 import edu.dadra.orecha.Adapter.ContactAdapter;
-import edu.dadra.orecha.FriendRequestList;
+import edu.dadra.orecha.FriendRequestActivity;
 import edu.dadra.orecha.Model.Friends;
 import edu.dadra.orecha.R;
 
@@ -60,7 +60,7 @@ public class ContactFragment extends Fragment {
         friendRequest.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(getActivity().getApplicationContext(), FriendRequestList.class);
+                Intent intent = new Intent(getActivity().getApplicationContext(), FriendRequestActivity.class);
                 startActivity(intent);
             }
         });

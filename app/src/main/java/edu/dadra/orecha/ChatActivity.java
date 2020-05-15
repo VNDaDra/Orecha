@@ -87,7 +87,7 @@ public class ChatActivity extends AppCompatActivity {
         initRecyclerView();
 
         showFriendInformation();
-
+        Log.d(TAG, "debug " +roomId);
         displayMessages();
 
         chooseImage();
@@ -149,11 +149,11 @@ public class ChatActivity extends AppCompatActivity {
                     if (!friend.getPhotoUrl().equals("")) {
                         Glide.with(getApplicationContext())
                                 .load(storage.getReferenceFromUrl(friend.getPhotoUrl()))
-                                .placeholder(R.drawable.ic_launcher_foreground)
+                                .placeholder(R.drawable.orange)
                                 .into(friendAvatar);
                     } else Glide.with(getApplicationContext())
-                            .load(R.drawable.ic_launcher_foreground)
-                            .placeholder(R.drawable.ic_launcher_foreground)
+                            .load(R.drawable.orange)
+                            .placeholder(R.drawable.orange)
                             .into(friendAvatar);
                 } catch (NullPointerException npe) {
                     Log.d(TAG, Objects.requireNonNull(npe.getMessage()));

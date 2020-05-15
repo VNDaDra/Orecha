@@ -24,8 +24,11 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.WriteBatch;
 import com.google.firebase.storage.FirebaseStorage;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -36,7 +39,7 @@ import edu.dadra.orecha.R;
 
 public class FriendRequestAdapter extends FirestoreRecyclerAdapter <FriendRequest, FriendRequestAdapter.ViewHolder> {
 
-    private final String TAG = "FriendRequestAdapter";
+    private static final String TAG = "FriendRequestAdapter";
     private Context context;
 
     private FirebaseFirestore db;
@@ -56,11 +59,11 @@ public class FriendRequestAdapter extends FirestoreRecyclerAdapter <FriendReques
         if (!friendRequest.getSenderAvatar().equals("")) {
             Glide.with(context)
                     .load(storage.getReferenceFromUrl(friendRequest.getSenderAvatar()))
-                    .placeholder(R.drawable.ic_launcher_foreground)
+                    .placeholder(R.drawable.orange)
                     .into(holder.avatar);
         } else Glide.with(context)
-                .load(R.drawable.ic_launcher_foreground)
-                .placeholder(R.drawable.ic_launcher_foreground)
+                .load(R.drawable.orange)
+                .placeholder(R.drawable.orange)
                 .into(holder.avatar);
 
         holder.declineButton.setOnClickListener(new View.OnClickListener() {
@@ -73,9 +76,7 @@ public class FriendRequestAdapter extends FirestoreRecyclerAdapter <FriendReques
         holder.acceptButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                updateMyContact(friendRequest);
-                updateFriendContact(friendRequest);
-                deleteFriendRequest(friendRequest);
+                updateContact(friendRequest);
             }
         });
     }
@@ -119,7 +120,7 @@ public class FriendRequestAdapter extends FirestoreRecyclerAdapter <FriendReques
         friendRequestRef.delete();
     }
 
-    private void updateMyContact(FriendRequest friendRequest) {
+    private void updateContact(FriendRequest friendRequest) {
         db.collection("users").document(friendRequest.getSenderId())
                 .get()
                 .addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
@@ -128,37 +129,65 @@ public class FriendRequestAdapter extends FirestoreRecyclerAdapter <FriendReques
                 if (task.isSuccessful()) {
                     DocumentSnapshot document = task.getResult();
                     if (document.exists()) {
+                        WriteBatch batch = db.batch();
+
                         DocumentReference friendIdRef = db.collection("contacts").document(firebaseUser.getUid())
                                 .collection("userContacts").document(friendRequest.getSenderId());
+                        batch.set(friendIdRef, Objects.requireNonNull(document.getData()));
 
-                        friendIdRef.set(document.getData())
-                                .addOnFailureListener(new OnFailureListener() {
-                                    @Override
-                                    public void onFailure(@NonNull Exception e) {
-                                        Log.d(TAG, "updateMyContact error", e);
-                                    }
-                                });
-                        friendIdRef.update("hasChat", false);
-                        friendIdRef.update("roomId", "");
+                        DocumentReference myIdRef = db.collection("contacts").document(friendRequest.getSenderId())
+                                .collection("userContacts").document(firebaseUser.getUid());
+                        batch.set(myIdRef, currentUserData);
+
+                        batch.commit().addOnCompleteListener(new OnCompleteListener<Void>() {
+                            @Override
+                            public void onComplete(@NonNull Task<Void> task) {
+                                createChatRoom(friendRequest);
+                                deleteFriendRequest(friendRequest);
+                            }
+                        });
                     }
                 }
             }
         });
     }
 
-    private void updateFriendContact(FriendRequest friendRequest) {
+    private void createChatRoom(FriendRequest friendRequest) {
+        WriteBatch batch = db.batch();
+
+        DocumentReference roomIdRef = db.collection("rooms").document();
+        String roomId = roomIdRef.getId();
+
+        Map<String, Object> roomData = new HashMap<>();
+        roomData.put("id", roomId);
+
+        batch.set(roomIdRef, roomData);
+
+        //Update chat information in MY contact collection
+        DocumentReference friendIdRef = db.collection("contacts").document(firebaseUser.getUid())
+                .collection("userContacts").document(friendRequest.getSenderId());
+        batch.update(friendIdRef, "roomId", roomId);
+        batch.update(friendIdRef, "hasChat", true);
+        batch.update(friendIdRef, "lastMessageTime", null);
+
+        //Update chat information in FRIEND contact collection
         DocumentReference myIdRef = db.collection("contacts").document(friendRequest.getSenderId())
                 .collection("userContacts").document(firebaseUser.getUid());
+        batch.update(myIdRef, "roomId", roomId);
+        batch.update(myIdRef, "hasChat", true);
+        batch.update(myIdRef, "lastMessageTime", null);
 
-        myIdRef.set(currentUserData)
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Log.d(TAG, "updateFriendContact error", e);
-                    }
-                });
-        myIdRef.update("hasChat", false);
-        myIdRef.update("roomId", "");
+        batch.commit().addOnCompleteListener(new OnCompleteListener<Void>() {
+            @Override
+            public void onComplete(@NonNull Task<Void> task) {
+                Log.d(TAG, "Create RoomId complete");
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                Log.d(TAG, "Create RoomId fail");
+            }
+        });
     }
 
     private void getCurrentUserData() {

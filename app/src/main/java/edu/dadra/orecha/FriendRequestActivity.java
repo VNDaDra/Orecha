@@ -17,7 +17,7 @@ import com.google.firebase.firestore.Query;
 import edu.dadra.orecha.Adapter.FriendRequestAdapter;
 import edu.dadra.orecha.Model.FriendRequest;
 
-public class FriendRequestList extends AppCompatActivity {
+public class FriendRequestActivity extends AppCompatActivity {
 
     private RecyclerView friendRequestRecyclerView;
     private FriendRequestAdapter friendRequestAdapter;
