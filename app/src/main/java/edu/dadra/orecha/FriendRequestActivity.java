@@ -11,6 +11,7 @@ import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 
@@ -63,10 +64,16 @@ public class FriendRequestActivity extends AppCompatActivity {
         firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
     }
 
+    private void setUnseenFriendRequestToZero () {
+        DocumentReference requestRef = db.collection("friendRequest").document(firebaseUser.getUid());
+        requestRef.update("unseen", 0);
+    }
+
     @Override
     public void onStart() {
         super.onStart();
         friendRequestAdapter.startListening();
+        setUnseenFriendRequestToZero();
     }
 
     @Override

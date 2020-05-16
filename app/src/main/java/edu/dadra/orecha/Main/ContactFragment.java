@@ -9,7 +9,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -18,7 +20,11 @@ import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Query;
 
 import java.util.Objects;
@@ -39,8 +45,9 @@ public class ContactFragment extends Fragment {
     private FirebaseUser firebaseUser;
     private FirebaseFirestore db;
 
-    private EditText searchBar;
     private LinearLayout friendRequest;
+    private TextView unseenFriendRequest;
+    private EditText searchBar;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -54,16 +61,9 @@ public class ContactFragment extends Fragment {
 
         init();
 
-        searchBar = contactFragmentView.findViewById(R.id.contact_search_bar);
-        friendRequest = contactFragmentView.findViewById(R.id.list_friend_request);
+        moveToFriendRequestActivity();
 
-        friendRequest.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(getActivity().getApplicationContext(), FriendRequestActivity.class);
-                startActivity(intent);
-            }
-        });
+        displayUnseenFriendRequestBadge();
 
         CollectionReference contactsRef = db.collection("contacts").document(firebaseUser.getUid())
                 .collection("userContacts");
@@ -116,10 +116,54 @@ public class ContactFragment extends Fragment {
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(Objects.requireNonNull(getActivity()).getApplicationContext(),
                 LinearLayoutManager.VERTICAL, false);
         contactRecyclerView.setLayoutManager(linearLayoutManager);
+
+        initFirebase();
+        initLayout();
+    }
+
+    private void initFirebase() {
         db = FirebaseFirestore.getInstance();
         firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
     }
 
+    private void initLayout() {
+        searchBar = contactFragmentView.findViewById(R.id.contact_search_bar);
+        friendRequest = contactFragmentView.findViewById(R.id.list_friend_request);
+        unseenFriendRequest = contactFragmentView.findViewById(R.id.contact_unseen_friend_request);
+    }
+
+    private void displayUnseenFriendRequestBadge() {
+        DocumentReference requestRef = db.collection("friendRequest").document(firebaseUser.getUid());
+        requestRef.addSnapshotListener(new EventListener<DocumentSnapshot>() {
+            @Override
+            public void onEvent(@Nullable DocumentSnapshot snapshot, @Nullable FirebaseFirestoreException e) {
+                if (snapshot != null && snapshot.exists()) {
+                    int unseen = snapshot.getLong("unseen").intValue();
+                    if (unseen > 0 && unseen < 9) {
+                        unseenFriendRequest.setText(String.valueOf(unseen));
+                        unseenFriendRequest.setVisibility(View.VISIBLE);
+                    } else if (unseen > 9) {
+                        unseenFriendRequest.setText("9+");
+                        unseenFriendRequest.setVisibility(View.VISIBLE);
+                    }
+                    else {
+                        unseenFriendRequest.setVisibility(View.GONE);
+                    }
+                }
+            }
+        });
+    }
+
+    private void moveToFriendRequestActivity() {
+        friendRequest.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getActivity().getApplicationContext(), FriendRequestActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
+            }
+        });
+    }
 
     @Override
     public void onStart() {

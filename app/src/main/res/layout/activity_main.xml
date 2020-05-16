@@ -56,6 +56,5 @@
                 app:menu="@menu/main_bottom_navigate"/>
         </FrameLayout>
 
-
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

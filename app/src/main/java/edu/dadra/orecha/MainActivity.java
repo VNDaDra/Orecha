@@ -24,6 +24,7 @@ import com.bumptech.glide.Glide;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.material.badge.BadgeDrawable;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputLayout;
@@ -33,10 +34,12 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.storage.FirebaseStorage;
 
 import java.util.Date;
@@ -62,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
 
     public Users currentUserData;
 
+    BottomNavigationView bottomNavigationView;
     private ImageView currentUserAvatar;
     private TextView mainTitle;
 
@@ -131,13 +135,37 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initLayout() {
-        BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
+        bottomNavigationView = findViewById(R.id.bottom_navigation);
         bottomNavigationView.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
         openFragment(new ChatListFragment());
 
         toolbar = findViewById(R.id.main_toolbar);
         currentUserAvatar = findViewById(R.id.main_toolbar_icon);
         mainTitle = findViewById(R.id.main_toolbar_title);
+
+        try {
+            displayBottomNavigateBadge();
+        } catch (NullPointerException ex) {
+            Log.d(TAG, "Have no friendRequest");
+        }
+    }
+
+    private void displayBottomNavigateBadge() {
+        DocumentReference requestRef = db.collection("friendRequest").document(firebaseUser.getUid());
+        requestRef.addSnapshotListener(new EventListener<DocumentSnapshot>() {
+            @Override
+            public void onEvent(@Nullable DocumentSnapshot snapshot, @Nullable FirebaseFirestoreException e) {
+                if (snapshot != null && snapshot.exists()) {
+                    int unseen = snapshot.getLong("unseen").intValue();
+                    BadgeDrawable badge = bottomNavigationView.getOrCreateBadge(R.id.navigation_contact);
+                    if (unseen > 0) {
+                        badge.setVisible(true);
+                    } else {
+                        badge.setVisible(false);
+                    }
+                }
+            }
+        });
     }
 
     private void getCurrentUserData() {
@@ -152,17 +180,17 @@ public class MainActivity extends AppCompatActivity {
 
                         if (snapshot != null && snapshot.exists()) {
                             currentUserData = snapshot.toObject(Users.class);
-                                if (!currentUserData.getPhotoUrl().equals("")) {
-                                    Glide.with(getApplicationContext())
-                                            .load(storage.getReferenceFromUrl(currentUserData.getPhotoUrl()))
-                                            .placeholder(R.drawable.ic_launcher_foreground)
-                                            .into(currentUserAvatar);
-                                } else Glide.with(getApplicationContext())
-                                        .load(R.drawable.ic_launcher_foreground)
-                                        .placeholder(R.drawable.ic_launcher_foreground)
+                            if (!currentUserData.getPhotoUrl().equals("")) {
+                                Glide.with(getApplicationContext())
+                                        .load(storage.getReferenceFromUrl(currentUserData.getPhotoUrl()))
+                                        .placeholder(R.drawable.orange)
                                         .into(currentUserAvatar);
+                            } else Glide.with(getApplicationContext())
+                                    .load(R.drawable.orange)
+                                    .placeholder(R.drawable.orange)
+                                    .into(currentUserAvatar);
 
-                                mainTitle.setText(currentUserData.getDisplayName());
+                            mainTitle.setText(currentUserData.getDisplayName());
                         }
                     }
                 });
@@ -237,34 +265,53 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
-        private void validateExistFriend(QueryDocumentSnapshot doc) {
+    private void validateExistFriend(QueryDocumentSnapshot friend) {
         friendIdRef = db.collection("contacts").document(firebaseUser.getUid())
-                .collection("userContacts").document(doc.getId());
+                .collection("userContacts").document(friend.getId());
+        final String friendId = friend.getId();
 
-        friendIdRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+        friendIdRef.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
             @Override
-            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
-                if(task.isSuccessful()) {
-                    DocumentSnapshot document = task.getResult();
-                    if (!document.exists() && !doc.getId().equals(firebaseUser.getUid())) {
-                        sendFriendRequest(doc);
-                        Log.d(TAG, "Send request Successful");
-                    } else {
-                        Toast.makeText(getApplicationContext(), "Người này đã có trong danh bạ", Toast.LENGTH_SHORT).show();
-                        Log.d(TAG, "validateFiend: Failed");
-                    }
+            public void onSuccess(DocumentSnapshot snapshot) {
+                if (snapshot.exists() || friendId.equals(firebaseUser.getUid())) {
+                    Toast.makeText(getApplicationContext(), "Người này đã có trong danh bạ", Toast.LENGTH_SHORT).show();
+                } else {
+                    DocumentReference friendRequestRef = db.collection("friendRequest").document(friendId)
+                            .collection("listOfFriendRequest").document(currentUserData.getId());
+                    friendRequestRef.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+                        @Override
+                        public void onSuccess(DocumentSnapshot snapshot) {
+                            if (snapshot.exists()) {
+                                Toast.makeText(getApplicationContext(), "Hãy đợi đối phương đồng ý", Toast.LENGTH_SHORT).show();
+                            } else {
+                                DocumentReference myRequestRef = db.collection("friendRequest").document(currentUserData.getId())
+                                        .collection("listOfFriendRequest").document(friendId);
+                                myRequestRef.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+                                    @Override
+                                    public void onSuccess(DocumentSnapshot snapshot) {
+                                        if (snapshot.exists()) {
+                                            Toast.makeText(getApplicationContext(), "Họ đã gửi yêu cầu kết bạn\n Hãy đồng ý", Toast.LENGTH_SHORT).show();
+                                        } else {
+                                            sendFriendRequest(friendId);
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    });
                 }
             }
         });
     }
 
-    private void sendFriendRequest(QueryDocumentSnapshot doc) {
-        DocumentReference friendRequestRef = db.collection("friendRequest").document(doc.getId())
+    private void sendFriendRequest(String friendId) {
+        DocumentReference friendRequestRef = db.collection("friendRequest").document(friendId)
                 .collection("listOfFriendRequest").document(currentUserData.getId());
+
         Map<String, Object> requestInfo = new HashMap<>();
         requestInfo.put("senderId", currentUserData.getId());
         requestInfo.put("senderName", currentUserData.getDisplayName());
-        requestInfo.put("receiverId", doc.getId());
+        requestInfo.put("receiverId", friendId);
         requestInfo.put("state", "waiting");
         requestInfo.put("senderAvatar", currentUserData.getPhotoUrl());
         requestInfo.put("time", new Timestamp(new Date() ));
@@ -276,6 +323,11 @@ public class MainActivity extends AppCompatActivity {
                         Toast.makeText(getApplicationContext(), "Đã gửi yêu cầu kết bạn", Toast.LENGTH_SHORT).show();
                     }
                 });
+
+        DocumentReference requestRef = db.collection("friendRequest").document(friendId);
+        Map<String, Object> unseenCounter = new HashMap<>();
+        unseenCounter.put("unseen", FieldValue.increment(1));
+        requestRef.set(unseenCounter, SetOptions.merge());
     }
 
     public void logout() {

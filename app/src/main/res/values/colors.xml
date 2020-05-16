@@ -9,6 +9,7 @@
     <color name="gray500">#9E9E9E</color>
 
     <color name="orange300">#FFB74D</color>
+    <color name="orange400">#FFA726</color>
     <color name="orange500">#FF9800</color>
     <color name="orange700">#F57C00</color>
 
@@ -16,6 +17,7 @@
 
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
+    <color name="red">#FF0000</color>
 
     <color name="mtrl_textinput_default_box_stroke_color" tools:override="true">@color/colorPrimary</color>
 

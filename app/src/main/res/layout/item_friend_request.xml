@@ -35,8 +35,11 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/placeholder_name"
-            android:textSize="17sp"
+            android:textSize="16sp"
+            android:textColor="@color/black"
             android:textStyle="bold"
+            android:fontFamily="sans-serif-light"
+            android:maxLines="1"
             android:layout_marginTop="10dp"
             android:layout_marginStart="15dp"
             android:layout_gravity="top"/>
