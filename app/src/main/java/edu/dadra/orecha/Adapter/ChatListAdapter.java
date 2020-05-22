@@ -20,12 +20,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
-import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.EventListener;
@@ -45,22 +42,25 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 
 import edu.dadra.orecha.ChatActivity;
-import edu.dadra.orecha.Model.Friends;
+import edu.dadra.orecha.MainActivity;
 import edu.dadra.orecha.Model.Message;
+import edu.dadra.orecha.Model.Rooms;
+import edu.dadra.orecha.Model.Users;
 import edu.dadra.orecha.ProfileActivity;
 import edu.dadra.orecha.R;
 
-public class ChatListAdapter extends FirestoreRecyclerAdapter<Friends, ChatListAdapter.ViewHolder> {
+public class ChatListAdapter extends FirestoreRecyclerAdapter<Rooms, ChatListAdapter.ViewHolder> {
     private static final String TAG = "ChatListAdapter";
     private Context context;
 
-    private FirebaseUser firebaseUser;
     private FirebaseFirestore db;
+    private FirebaseStorage storage;
     private String lastMessage, type;
     private Date date;
-    private FirebaseStorage storage;
 
-    public ChatListAdapter(@NonNull FirestoreRecyclerOptions<Friends> options) {
+    private Users currentUserData;
+
+    public ChatListAdapter(@NonNull FirestoreRecyclerOptions<Rooms> options) {
         super(options);
     }
 
@@ -69,12 +69,12 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Friends, ChatListA
         super.onDataChanged();
     }
 
-    public void onBindViewHolder(ViewHolder holder, int position, Friends friend) {
-        holder.displayName.setText(friend.getDisplayName());
+    public void onBindViewHolder(ViewHolder holder, int position, Rooms room) {
+        holder.displayName.setText(room.getDisplayName());
 
-        if (!friend.getPhotoUrl().equals("")) {
+        if (!room.getPhotoUrl().equals("")) {
             Glide.with(context)
-                    .load(storage.getReferenceFromUrl(friend.getPhotoUrl()))
+                    .load(storage.getReferenceFromUrl(room.getPhotoUrl()))
                     .placeholder(R.drawable.orange)
                     .into(holder.avatar);
         } else Glide.with(context)
@@ -82,12 +82,12 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Friends, ChatListA
                 .placeholder(R.drawable.orange)
                 .into(holder.avatar);
 
-        getLastMessage(friend.getRoomId(), holder.lastMessageTextView, holder.time);
+        getLastMessage(room.getRoomId(), holder.lastMessageTextView, holder.time);
 
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startChatRoom(friend);
+                startChatRoom(room);
             }
         });
 
@@ -98,10 +98,10 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Friends, ChatListA
             public boolean onMenuItemClick(MenuItem item) {
                 switch (item.getItemId()) {
                     case R.id.show_profile_option:
-                        moveToProfileActivity(friend);
+                        moveToProfileActivity(room);
                         return true;
                     case R.id.delete_message_option:
-                        confirmDelete(friend);
+                        confirmDelete(room);
                         return true;
                     default:
                         return false;
@@ -126,7 +126,7 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Friends, ChatListA
         context = parent.getContext();
         db = FirebaseFirestore.getInstance();
         storage = FirebaseStorage.getInstance();
-        firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+        getCurrentUserData();
         return new ViewHolder(view);
     }
 
@@ -150,8 +150,8 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Friends, ChatListA
 
     private void getLastMessage(String roomId, TextView lastMessageTextView, TextView time) {
 
-        CollectionReference messagesRef = db.collection("messages").document(roomId)
-                .collection("messagesOfThisRoom");
+        CollectionReference messagesRef = db.collection("messages").document(currentUserData.getId())
+                .collection("messagesWith").document(roomId).collection("messagesOfThisRoom");
         Query query = messagesRef.orderBy("time", Query.Direction.DESCENDING);
         lastMessage = "";
         query.limit(1)
@@ -201,65 +201,67 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Friends, ChatListA
         }
     }
 
-    private void startChatRoom(Friends friend) {
+    private void startChatRoom(Rooms room) {
         Intent chatIntent = new Intent(context, ChatActivity.class);
         chatIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        chatIntent.putExtra("roomId", friend.getRoomId());
-        chatIntent.putExtra("displayName", friend.getDisplayName());
-        chatIntent.putExtra("friendId", friend.getId());
-        chatIntent.putExtra("friendAvatar", friend.getPhotoUrl());
+        chatIntent.putExtra("roomId", room.getRoomId());
+        chatIntent.putExtra("friendId", room.getFriendId());
         context.startActivity(chatIntent);
     }
 
-    private void moveToProfileActivity(Friends friend) {
+    private void moveToProfileActivity(Rooms room) {
         Intent profileIntent = new Intent(context, ProfileActivity.class);
-        profileIntent.putExtra("id", friend.getId());
+        profileIntent.putExtra("id", room.getRoomId());
         profileIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         context.startActivity(profileIntent);
     }
 
-    private void deleteMessage(Friends friend) {
+    private void deleteRoom(Rooms room) {
         WriteBatch batch = db.batch();
-        String roomId = friend.getRoomId();
-
-        //Update chat information in MY contact collection
-        DocumentReference friendIdRef = db.collection("contacts").document(firebaseUser.getUid())
-                .collection("userContacts").document(friend.getId());
-        batch.update(friendIdRef, "roomId", "");
-        batch.update(friendIdRef, "hasChat", false);
-        batch.update(friendIdRef, "lastMessageTime", null);
-
-        //Update chat information in FRIEND contact collection
-        DocumentReference myIdRef = db.collection("contacts").document(friend.getId())
-                .collection("userContacts").document(firebaseUser.getUid());
-        batch.update(myIdRef, "roomId", "");
-        batch.update(myIdRef, "hasChat", false);
-        batch.update(myIdRef, "lastMessageTime", null);
 
         //Delete room in rooms collection
-        DocumentReference roomId_my_roomsCollection = db.collection("rooms").document(roomId);
-        DocumentReference roomId_friend_roomsCollection = db.collection("rooms").document(roomId);
-        batch.delete(roomId_my_roomsCollection);
-        batch.delete(roomId_friend_roomsCollection);
+        DocumentReference myRoomRef = db
+                .collection("rooms").document(currentUserData.getId())
+                .collection("userRooms").document(room.getRoomId());
+        DocumentReference friendRoomRef = db
+                .collection("rooms").document(room.getFriendId())
+                .collection("userRooms").document(room.getRoomId());
+        batch.delete(myRoomRef);
+        batch.delete(friendRoomRef);
 
-        //Can't delete all messages of roomId because it has sub-collection **FireStore Limitation**
-//        DocumentReference roomId_messageCollection = db.collection("message").document(roomId);
-//        batch.delete(roomId_messageCollection);
+        DocumentReference friendRef = db
+                .collection("contacts").document(currentUserData.getId())
+                .collection("userContacts").document(room.getFriendId());
+        DocumentReference myRef = db
+                .collection("contacts").document(room.getFriendId())
+                .collection("userContacts").document(currentUserData.getId());
+        batch.update(friendRef, "roomId", "");
+        batch.update(myRef, "roomId", "");
 
-        batch.commit().addOnCompleteListener(new OnCompleteListener<Void>() {
-            @Override
-            public void onComplete(@NonNull Task<Void> task) {
-                Toast.makeText(context, "Đã xóa", Toast.LENGTH_SHORT).show();
-            }
-        }).addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception e) {
-                Toast.makeText(context, "Không thể xóa", Toast.LENGTH_SHORT).show();
-            }
-        });
+//        CollectionReference myMessagesRef = db
+//                .collection("messages").document(currentUserData.getId())
+//                .collection("messagesWith").document(room.getRoomId())
+//                .collection("messagesOfThisRoom");
+//        DocumentReference friendMessagesRef = db.collection("messages").document(room.getRoomId())
+//                .collection("messagesWith").document(currentUserData.getId());
+//        batch.delete(myMessagesRef);
+//        batch.delete(friendMessagesRef);
+
+        batch.commit()
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        Toast.makeText(context, "Đã xóa", Toast.LENGTH_SHORT).show();
+                    }
+                }).addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Toast.makeText(context, "Không thể xóa", Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 
-    private void confirmDelete(Friends friend) {
+    private void confirmDelete(Rooms room) {
         new MaterialAlertDialogBuilder(context, R.style.AlertDialogTheme)
                 .setTitle("Xóa ?")
                 .setMessage("Xóa cả tin nhắn của đối phương")
@@ -272,10 +274,14 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Friends, ChatListA
                 .setPositiveButton("Xóa", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        deleteMessage(friend);
+                        deleteRoom(room);
                     }
                 })
                 .show();
+    }
+
+    private void getCurrentUserData() {
+        currentUserData = MainActivity.currentUserData;
     }
 
 }

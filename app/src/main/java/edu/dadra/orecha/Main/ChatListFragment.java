@@ -22,7 +22,7 @@ import com.google.firebase.firestore.Query;
 import java.util.Objects;
 
 import edu.dadra.orecha.Adapter.ChatListAdapter;
-import edu.dadra.orecha.Model.Friends;
+import edu.dadra.orecha.Model.Rooms;
 import edu.dadra.orecha.R;
 
 public class ChatListFragment extends Fragment {
@@ -31,13 +31,10 @@ public class ChatListFragment extends Fragment {
 
     private View chatListFragmentView;
     private RecyclerView chatListRecyclerView;
-    private LinearLayoutManager linearLayoutManager;
-    ChatListAdapter chatListAdapter;
+    private ChatListAdapter chatListAdapter;
 
     private FirebaseFirestore db;
-    private FirebaseAuth mAuth;
     private FirebaseUser firebaseUser;
-    private CollectionReference contactRef;
 
     private EditText searchBar;
 
@@ -54,12 +51,11 @@ public class ChatListFragment extends Fragment {
         init();
         searchBar = chatListFragmentView.findViewById(R.id.chat_list_search_bar);
 
-        contactRef = db.collection("contacts").document(firebaseUser.getUid())
-                .collection("userContacts");
-        Query query = contactRef.whereEqualTo("hasChat", true)
-                .orderBy("lastMessageTime", Query.Direction.DESCENDING);
-        FirestoreRecyclerOptions<Friends> defaultOptions = new FirestoreRecyclerOptions.Builder<Friends>()
-                .setQuery(query, Friends.class).build();
+        CollectionReference roomIdRef = db.collection("rooms").document(firebaseUser.getUid())
+                .collection("userRooms");
+        Query query = roomIdRef.orderBy("lastMessageTime", Query.Direction.DESCENDING);
+        FirestoreRecyclerOptions<Rooms> defaultOptions = new FirestoreRecyclerOptions.Builder<Rooms>()
+                .setQuery(query, Rooms.class).build();
         chatListAdapter = new ChatListAdapter(defaultOptions);
         chatListAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
             @Override
@@ -79,14 +75,13 @@ public class ChatListFragment extends Fragment {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if (s.toString().trim().length() != 0) {
-                    Query filterQuery = db.collection("contacts").document(firebaseUser.getUid())
-                            .collection("userContacts")
-                            .whereEqualTo("hasChat", true)
+                    Query filterQuery = db.collection("rooms").document(firebaseUser.getUid())
+                            .collection("userRooms")
                             .orderBy("displayName", Query.Direction.ASCENDING)
                             .startAt(s.toString().trim())
                             .endAt(s.toString().trim() + "\uf8ff");
-                    FirestoreRecyclerOptions<Friends> filterOption = new FirestoreRecyclerOptions.Builder<Friends>()
-                            .setQuery(filterQuery, Friends.class).build();
+                    FirestoreRecyclerOptions<Rooms> filterOption = new FirestoreRecyclerOptions.Builder<Rooms>()
+                            .setQuery(filterQuery, Rooms.class).build();
                     chatListAdapter.updateOptions(filterOption);
                 } else {
                     chatListAdapter.updateOptions(defaultOptions);
@@ -103,12 +98,11 @@ public class ChatListFragment extends Fragment {
 
     private void init() {
         chatListRecyclerView = chatListFragmentView.findViewById(R.id.rv_chat_list);
-        linearLayoutManager = new LinearLayoutManager(Objects.requireNonNull(getActivity()).getApplicationContext(),
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(Objects.requireNonNull(getActivity()).getApplicationContext(),
                 LinearLayoutManager.VERTICAL, false);
         chatListRecyclerView.setLayoutManager(linearLayoutManager);
         db = FirebaseFirestore.getInstance();
-        mAuth = FirebaseAuth.getInstance();
-        firebaseUser = mAuth.getCurrentUser();
+        firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
     }
 
     @Override

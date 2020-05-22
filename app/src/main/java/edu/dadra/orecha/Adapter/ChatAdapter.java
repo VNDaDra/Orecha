@@ -42,7 +42,7 @@ public class ChatAdapter extends FirestoreRecyclerAdapter<Message, ChatAdapter.V
 
     private Context context;
 
-    private FirebaseUser firebaseUser  = FirebaseAuth.getInstance().getCurrentUser();
+    private FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
 
     public ChatAdapter(@NonNull FirestoreRecyclerOptions<Message> options) {
         super(options);
@@ -87,8 +87,6 @@ public class ChatAdapter extends FirestoreRecyclerAdapter<Message, ChatAdapter.V
                 }
             });
         }
-
-
     }
 
     @NonNull
@@ -132,11 +130,11 @@ public class ChatAdapter extends FirestoreRecyclerAdapter<Message, ChatAdapter.V
 
     }
 
-    public class ViewHolder extends RecyclerView.ViewHolder {
+    class ViewHolder extends RecyclerView.ViewHolder {
 
         TextView  message;
         ImageView image;
-        public ViewHolder(@NonNull View itemView) {
+        ViewHolder(@NonNull View itemView) {
             super(itemView);
             message = itemView.findViewById(R.id.message_body);
             image = itemView.findViewById(R.id.message_image);
@@ -161,13 +159,19 @@ public class ChatAdapter extends FirestoreRecyclerAdapter<Message, ChatAdapter.V
     }
 
     private void deleteMessage(Message message) {
-        DocumentReference messageRef = db.collection("messages").document(message.getRoomId())
+        DocumentReference myMessageRef = db
+                .collection("messages").document(firebaseUser.getUid())
+                .collection("messagesWith").document(message.getRoomId())
                 .collection("messagesOfThisRoom").document(message.getId());
+//        DocumentReference friendMessageRef = db.collection("messages").document()
+//                .collection("messagesWith").document(message.getRoomId()).collection("messagesOfThisRoom")
+//                .document(message.getId());
+
         if (message.getType().equals("text")) {
-            messageRef.delete();
+            myMessageRef.delete();
         }
         else {
-            messageRef.delete();
+            myMessageRef.delete();
             StorageReference imageRef = storage.getReferenceFromUrl(message.getMessage());
             imageRef.delete();
         }

@@ -35,6 +35,7 @@ import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.WriteBatch;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
@@ -56,7 +57,7 @@ public class ChatActivity extends AppCompatActivity {
 
     private FirebaseUser firebaseUser;
     private FirebaseFirestore db;
-    private DocumentReference messagesRef;
+    private DocumentReference myMessagesRef, friendMessagesRef;
     private FirebaseStorage storage;
     private StorageReference storageReference;
 
@@ -87,7 +88,7 @@ public class ChatActivity extends AppCompatActivity {
         initRecyclerView();
 
         showFriendInformation();
-        Log.d(TAG, "debug " +roomId);
+
         displayMessages();
 
         chooseImage();
@@ -127,7 +128,7 @@ public class ChatActivity extends AppCompatActivity {
         db = FirebaseFirestore.getInstance();
         firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
         storage = FirebaseStorage.getInstance();
-        storageReference = storage.getReference("image_message");
+        storageReference = storage.getReference("image_message").child(firebaseUser.getUid());
     }
 
     private void initRecyclerView () {
@@ -165,8 +166,8 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     private void displayMessages() {
-        CollectionReference allMessageRef = db.collection("messages").document(roomId)
-                .collection("messagesOfThisRoom");
+        CollectionReference allMessageRef = db.collection("messages").document(firebaseUser.getUid())
+                .collection("messagesWith").document(roomId).collection("messagesOfThisRoom");
         Query query = allMessageRef.orderBy("time", Query.Direction.ASCENDING);
 
         FirestoreRecyclerOptions<Message> options = new FirestoreRecyclerOptions.Builder<Message>()
@@ -212,6 +213,7 @@ public class ChatActivity extends AppCompatActivity {
         if(requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK
                 && data != null && data.getData() != null ) {
             filePath = data.getData();
+            messageField.setText("");
             messageField.setVisibility(View.INVISIBLE);
             previewImage.setVisibility(View.VISIBLE);
             clearImageButton.setVisibility(View.VISIBLE);
@@ -243,8 +245,6 @@ public class ChatActivity extends AppCompatActivity {
                     lastMessageTime = new Timestamp(new Date());
                     uploadImageToStorage();
                     setLastMessageTime();
-                } else {
-                    messageField.setHint("Hãy nhập một tin nhắn");
                 }
                 messageField.setVisibility(View.VISIBLE);
                 messageField.setText("");
@@ -286,9 +286,12 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     private void sendImage(String imageRef) {
-        messagesRef = db.collection("messages").document(roomId)
-                .collection("messagesOfThisRoom").document();
-        String messageId = messagesRef.getId();
+        WriteBatch batch = db.batch();
+        myMessagesRef = db.collection("messages").document(firebaseUser.getUid())
+                .collection("messagesWith").document(roomId).collection("messagesOfThisRoom")
+                .document();
+
+        String messageId = myMessagesRef.getId();
         Map<String, Object> messageInfo = new HashMap<>();
 
         messageInfo.put("id", messageId);
@@ -298,32 +301,41 @@ public class ChatActivity extends AppCompatActivity {
         messageInfo.put("time", new Timestamp(new Date() ));
         messageInfo.put("type", "image");
 
-        messagesRef.set(messageInfo)
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Toast.makeText(getApplicationContext(), "Không thể gửi tin nhắn",
+        batch.set(myMessagesRef, messageInfo);
+
+        friendMessagesRef = db.collection("messages").document(friendId)
+                .collection("messagesWith").document(roomId).collection("messagesOfThisRoom")
+                .document(messageId);
+
+        batch.set(friendMessagesRef, messageInfo);
+
+        batch.commit().addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                Toast.makeText(getApplicationContext(), "Không thể gửi tin nhắn",
                                 Toast.LENGTH_SHORT).show();
-                    }
-                });
+            }
+        });
     }
 
 
     private void setLastMessageTime() {
         if (lastMessageTime != null) {
-            db.collection("contacts").document(firebaseUser.getUid())
-                    .collection("userContacts").document(friendId)
+            db.collection("rooms").document(firebaseUser.getUid())
+                    .collection("userRooms").document(roomId)
                     .update("lastMessageTime", lastMessageTime);
-            db.collection("contacts").document(friendId)
-                    .collection("userContacts").document(firebaseUser.getUid())
+            db.collection("rooms").document(friendId)
+                    .collection("userRooms").document(roomId)
                     .update("lastMessageTime", lastMessageTime);
         }
     }
 
     private void sendMessage(String message) {
-        messagesRef = db.collection("messages").document(roomId)
-                .collection("messagesOfThisRoom").document();
-        String messageId = messagesRef.getId();
+        WriteBatch batch = db.batch();
+        myMessagesRef = db.collection("messages").document(firebaseUser.getUid())
+                .collection("messagesWith").document(roomId).collection("messagesOfThisRoom")
+                .document();
+        String messageId = myMessagesRef.getId();
         Map<String, Object> messageInfo = new HashMap<>();
 
         messageInfo.put("id", messageId);
@@ -333,15 +345,21 @@ public class ChatActivity extends AppCompatActivity {
         messageInfo.put("time", new Timestamp(new Date() ));
         messageInfo.put("type", "text");
 
-        messagesRef.set(messageInfo)
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Toast.makeText(getApplicationContext(), "Không thể gửi tin nhắn",
-                                Toast.LENGTH_SHORT).show();
-                    }
-                });
+        batch.set(myMessagesRef, messageInfo);
 
+        friendMessagesRef = db.collection("messages").document(friendId)
+                .collection("messagesWith").document(roomId).collection("messagesOfThisRoom")
+                .document(messageId);
+
+        batch.set(friendMessagesRef, messageInfo);
+
+        batch.commit().addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                Toast.makeText(getApplicationContext(), "Không thể gửi tin nhắn",
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void moveToProfileActivity() {

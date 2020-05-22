@@ -60,10 +60,9 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseUser firebaseUser;
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
-    private DocumentReference friendIdRef;
     private FirebaseStorage storage;
 
-    public Users currentUserData;
+    public static Users currentUserData;
 
     BottomNavigationView bottomNavigationView;
     private ImageView currentUserAvatar;
@@ -266,7 +265,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void validateExistFriend(QueryDocumentSnapshot friend) {
-        friendIdRef = db.collection("contacts").document(firebaseUser.getUid())
+        DocumentReference friendIdRef = db.collection("contacts").document(firebaseUser.getUid())
                 .collection("userContacts").document(friend.getId());
         final String friendId = friend.getId();
 

@@ -18,8 +18,6 @@ import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.Task;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -33,6 +31,7 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
+import edu.dadra.orecha.MainActivity;
 import edu.dadra.orecha.Model.FriendRequest;
 import edu.dadra.orecha.Model.Users;
 import edu.dadra.orecha.R;
@@ -43,7 +42,6 @@ public class FriendRequestAdapter extends FirestoreRecyclerAdapter <FriendReques
     private Context context;
 
     private FirebaseFirestore db;
-    private FirebaseUser firebaseUser;
     private FirebaseStorage storage;
 
     private Users currentUserData;
@@ -88,7 +86,6 @@ public class FriendRequestAdapter extends FirestoreRecyclerAdapter <FriendReques
                 .inflate(R.layout.item_friend_request, parent, false);
         context = parent.getContext();
         db = FirebaseFirestore.getInstance();
-        firebaseUser  = FirebaseAuth.getInstance().getCurrentUser();
         storage = FirebaseStorage.getInstance();
 
         getCurrentUserData();
@@ -115,7 +112,7 @@ public class FriendRequestAdapter extends FirestoreRecyclerAdapter <FriendReques
     }
 
     private void deleteFriendRequest(FriendRequest friendRequest) {
-        DocumentReference friendRequestRef = db.collection("friendRequest").document(firebaseUser.getUid())
+        DocumentReference friendRequestRef = db.collection("friendRequest").document(currentUserData.getId())
                 .collection("listOfFriendRequest").document(friendRequest.getSenderId());
         friendRequestRef.delete();
     }
@@ -131,12 +128,12 @@ public class FriendRequestAdapter extends FirestoreRecyclerAdapter <FriendReques
                     if (document.exists()) {
                         WriteBatch batch = db.batch();
 
-                        DocumentReference friendIdRef = db.collection("contacts").document(firebaseUser.getUid())
+                        DocumentReference friendIdRef = db.collection("contacts").document(currentUserData.getId())
                                 .collection("userContacts").document(friendRequest.getSenderId());
                         batch.set(friendIdRef, Objects.requireNonNull(document.getData()));
 
                         DocumentReference myIdRef = db.collection("contacts").document(friendRequest.getSenderId())
-                                .collection("userContacts").document(firebaseUser.getUid());
+                                .collection("userContacts").document(currentUserData.getId());
                         batch.set(myIdRef, currentUserData);
 
                         batch.commit().addOnCompleteListener(new OnCompleteListener<Void>() {
@@ -155,54 +152,51 @@ public class FriendRequestAdapter extends FirestoreRecyclerAdapter <FriendReques
     private void createChatRoom(FriendRequest friendRequest) {
         WriteBatch batch = db.batch();
 
-        DocumentReference roomIdRef = db.collection("rooms").document();
-        String roomId = roomIdRef.getId();
+        DocumentReference myRoomIdRef = db.collection("rooms").document(currentUserData.getId())
+                .collection("userRooms").document();
+        String roomId = myRoomIdRef.getId();
 
-        Map<String, Object> roomData = new HashMap<>();
-        roomData.put("id", roomId);
+        Map<String, Object> myRoomData = new HashMap<>();
+        myRoomData.put("roomId", roomId);
+        myRoomData.put("friendId", friendRequest.getSenderId());
+        myRoomData.put("displayName", friendRequest.getSenderName());
+        myRoomData.put("photoUrl", friendRequest.getSenderAvatar());
+        myRoomData.put("lastMessageTime", null);
 
-        batch.set(roomIdRef, roomData);
+        DocumentReference friendRoomIdRef = db.collection("rooms").document(friendRequest.getSenderId())
+                .collection("userRooms").document(roomId);
 
-        //Update chat information in MY contact collection
-        DocumentReference friendIdRef = db.collection("contacts").document(firebaseUser.getUid())
+        Map<String, Object> friendRoomData = new HashMap<>();
+        friendRoomData.put("roomId", roomId);
+        friendRoomData.put("friendId", currentUserData.getId());
+        friendRoomData.put("displayName", currentUserData.getDisplayName());
+        friendRoomData.put("photoUrl", currentUserData.getPhotoUrl());
+        friendRoomData.put("lastMessageTime", null);
+
+        batch.set(myRoomIdRef, myRoomData);
+        batch.set(friendRoomIdRef, friendRoomData);
+
+        DocumentReference friendIdRef = db.collection("contacts").document(currentUserData.getId())
                 .collection("userContacts").document(friendRequest.getSenderId());
-        batch.update(friendIdRef, "roomId", roomId);
-        batch.update(friendIdRef, "hasChat", true);
-        batch.update(friendIdRef, "lastMessageTime", null);
-
-        //Update chat information in FRIEND contact collection
         DocumentReference myIdRef = db.collection("contacts").document(friendRequest.getSenderId())
-                .collection("userContacts").document(firebaseUser.getUid());
+                .collection("userContacts").document(currentUserData.getId());
+        batch.update(friendIdRef, "roomId", roomId);
         batch.update(myIdRef, "roomId", roomId);
-        batch.update(myIdRef, "hasChat", true);
-        batch.update(myIdRef, "lastMessageTime", null);
 
         batch.commit().addOnCompleteListener(new OnCompleteListener<Void>() {
             @Override
             public void onComplete(@NonNull Task<Void> task) {
-                Log.d(TAG, "Create RoomId complete");
+                Log.d(TAG, "Create room complete");
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception e) {
-                Log.d(TAG, "Create RoomId fail");
+                Log.d(TAG, "Create room fail");
             }
         });
     }
 
     private void getCurrentUserData() {
-        db.collection("users").document(firebaseUser.getUid())
-                .get()
-                .addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
-            @Override
-            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
-                if (task.isSuccessful()) {
-                    DocumentSnapshot document = task.getResult();
-                    if (document.exists()) {
-                        currentUserData = document.toObject(Users.class);
-                    }
-                }
-            }
-        });
+        currentUserData = MainActivity.currentUserData;
     }
 }
