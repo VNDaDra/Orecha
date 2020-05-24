@@ -149,9 +149,10 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Rooms, ChatListAda
 
 
     private void getLastMessage(String roomId, TextView lastMessageTextView, TextView time) {
-
-        CollectionReference messagesRef = db.collection("messages").document(currentUserData.getId())
-                .collection("messagesWith").document(roomId).collection("messagesOfThisRoom");
+        CollectionReference messagesRef = db
+                .collection("messages").document(currentUserData.getId())
+                .collection("messagesWith").document(roomId)
+                .collection("messagesOfThisRoom");
         Query query = messagesRef.orderBy("time", Query.Direction.DESCENDING);
         lastMessage = "";
         query.limit(1)
@@ -162,7 +163,6 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Rooms, ChatListAda
                             Log.d(TAG, "Listen failed.", e);
                             return;
                         }
-
                         for (QueryDocumentSnapshot doc : querySnapshot) {
                             Message lastMesObj = doc.toObject(Message.class);
                             lastMessage = lastMesObj.getMessage();
@@ -211,7 +211,7 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Rooms, ChatListAda
 
     private void moveToProfileActivity(Rooms room) {
         Intent profileIntent = new Intent(context, ProfileActivity.class);
-        profileIntent.putExtra("id", room.getRoomId());
+        profileIntent.putExtra("id", room.getFriendId());
         profileIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         context.startActivity(profileIntent);
     }
