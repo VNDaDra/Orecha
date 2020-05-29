@@ -159,8 +159,6 @@ public class FriendRequestAdapter extends FirestoreRecyclerAdapter <FriendReques
         Map<String, Object> myRoomData = new HashMap<>();
         myRoomData.put("roomId", roomId);
         myRoomData.put("friendId", friendRequest.getSenderId());
-        myRoomData.put("displayName", friendRequest.getSenderName());
-        myRoomData.put("photoUrl", friendRequest.getSenderAvatar());
         myRoomData.put("lastMessageTime", null);
 
         DocumentReference friendRoomIdRef = db.collection("rooms").document(friendRequest.getSenderId())
@@ -169,8 +167,6 @@ public class FriendRequestAdapter extends FirestoreRecyclerAdapter <FriendReques
         Map<String, Object> friendRoomData = new HashMap<>();
         friendRoomData.put("roomId", roomId);
         friendRoomData.put("friendId", currentUserData.getId());
-        friendRoomData.put("displayName", currentUserData.getDisplayName());
-        friendRoomData.put("photoUrl", currentUserData.getPhotoUrl());
         friendRoomData.put("lastMessageTime", null);
 
         batch.set(myRoomIdRef, myRoomData);

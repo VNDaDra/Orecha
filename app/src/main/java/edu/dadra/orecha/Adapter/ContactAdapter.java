@@ -121,7 +121,7 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
         Log.d(TAG, Objects.requireNonNull(e.getMessage()));
     }
 
-    class ViewHolder extends RecyclerView.ViewHolder {
+    static class ViewHolder extends RecyclerView.ViewHolder {
         TextView displayName;
         ImageView avatar;
         ImageView menu;
@@ -132,22 +132,6 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
             menu = itemView.findViewById(R.id.contact_option_button);
         }
     }
-
-//    private void checkExistRoom(Friends friend) {
-//        DocumentReference myRoomIdRef = db.collection("rooms").document(currentUserData.getId())
-//                .collection("userRooms").document(friend.getRoomId());
-//        myRoomIdRef.get()
-//                .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
-//                    @Override
-//                    public void onSuccess(DocumentSnapshot snapshot) {
-//                        if (snapshot.exists()) {
-//                            startChatRoom(friend.getId(), );
-//                        } else {
-//                            createChatRoom(friend);
-//                        }
-//                    }
-//                });
-//    }
 
     private void startChatRoom(String friendId, String roomId) {
         Intent chatIntent = new Intent(context, ChatActivity.class);
@@ -167,8 +151,6 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
         Map<String, Object> myRoomData = new HashMap<>();
         myRoomData.put("roomId", roomId);
         myRoomData.put("friendId", friend.getId());
-        myRoomData.put("displayName", friend.getDisplayName());
-        myRoomData.put("photoUrl", friend.getPhotoUrl());
         myRoomData.put("lastMessageTime", null);
 
         DocumentReference friendRoomIdRef = db.collection("rooms").document(friend.getId())
@@ -177,8 +159,6 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
         Map<String, Object> friendRoomData = new HashMap<>();
         friendRoomData.put("roomId", roomId);
         friendRoomData.put("friendId", currentUserData.getId());
-        friendRoomData.put("displayName", currentUserData.getDisplayName());
-        friendRoomData.put("photoUrl", currentUserData.getPhotoUrl());
         friendRoomData.put("lastMessageTime", null);
 
         batch.set(myRoomIdRef, myRoomData);

@@ -48,7 +48,7 @@ import edu.dadra.orecha.Model.Users;
 
 public class ProfileActivity extends AppCompatActivity {
 
-    private final String TAG = "ProfileActivity";
+    private static final String TAG = "ProfileActivity";
     private final int PICK_IMAGE_REQUEST = 1;
 
     private FirebaseFirestore db;
@@ -166,11 +166,11 @@ public class ProfileActivity extends AppCompatActivity {
                             if (!currentUserData.getPhotoUrl().equals("")) {
                                 Glide.with(getApplicationContext())
                                         .load(storage.getReferenceFromUrl(currentUserData.getPhotoUrl()))
-                                        .placeholder(R.drawable.ic_launcher_foreground)
+                                        .placeholder(R.drawable.orange)
                                         .into(profileAvatar);
                             } else Glide.with(getApplicationContext())
-                                    .load(R.drawable.ic_launcher_foreground)
-                                    .placeholder(R.drawable.ic_launcher_foreground)
+                                    .load(R.drawable.orange)
+                                    .placeholder(R.drawable.orange)
                                     .into(profileAvatar);
 
                             profileTitleName.setText(currentUserData.getDisplayName());
@@ -198,7 +198,6 @@ public class ProfileActivity extends AppCompatActivity {
                 updateProfileButton.setEnabled(true);
             }
         });
-
     }
 
     private void avatarListener() {
@@ -278,12 +277,12 @@ public class ProfileActivity extends AppCompatActivity {
                 if (!currentUserData.getPhotoUrl().equals("")) {
                     Glide.with(getApplicationContext())
                             .load(storage.getReferenceFromUrl(currentUserData.getPhotoUrl()))
-                            .placeholder(R.drawable.ic_launcher_foreground)
+                            .placeholder(R.drawable.orange)
                             .into(profileAvatar);
                 } else {
                     Glide.with(getApplicationContext())
-                            .load(R.drawable.ic_launcher_foreground)
-                            .placeholder(R.drawable.ic_launcher_foreground)
+                            .load(R.drawable.orange)
+                            .placeholder(R.drawable.orange)
                             .into(profileAvatar);
                 }
             }
@@ -303,7 +302,7 @@ public class ProfileActivity extends AppCompatActivity {
             progressDialog.setTitle("Tải lên");
             progressDialog.show();
 
-            StorageReference ref = storageReference.child(userId + "_" + System.currentTimeMillis() +"." + getFileExtension(filePath));
+            StorageReference ref = storageReference.child(userId + "." + getFileExtension(filePath));
             ref.putFile(filePath)
                     .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
                         @Override
@@ -395,16 +394,10 @@ public class ProfileActivity extends AppCompatActivity {
         userRef = db.collection("users").document(firebaseUser.getUid());
         userRef.update( "displayName", profileName.getText().toString().trim(),
                                     "phone", profilePhone.getText().toString().trim())
-                .addOnSuccessListener(new OnSuccessListener<Void>() {
-                    @Override
-                    public void onSuccess(Void aVoid) {
-                        Log.d("Profile", "updateUsersCollection successful");
-                    }
-                })
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        Log.d("Profile", "updateUsersCollection fail");
+                        Log.d(TAG, "updateUsersCollection fail");
                     }
                 });
     }
@@ -426,7 +419,6 @@ public class ProfileActivity extends AppCompatActivity {
                         }
                     }
                 });
-
     }
 
     private boolean checkValidInput() {

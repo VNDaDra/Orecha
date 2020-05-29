@@ -319,17 +319,20 @@ public class MainActivity extends AppCompatActivity {
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
+                        increaseUnseenCounter(friendId);
                         Toast.makeText(getApplicationContext(), "Đã gửi yêu cầu kết bạn", Toast.LENGTH_SHORT).show();
                     }
                 });
+    }
 
+    private void increaseUnseenCounter(String friendId) {
         DocumentReference requestRef = db.collection("friendRequest").document(friendId);
         Map<String, Object> unseenCounter = new HashMap<>();
         unseenCounter.put("unseen", FieldValue.increment(1));
         requestRef.set(unseenCounter, SetOptions.merge());
     }
 
-    public void logout() {
+    private void logout() {
         mAuth.signOut();
         Intent loginIntent = new Intent(getApplicationContext(), LoginActivity.class);
         loginIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);

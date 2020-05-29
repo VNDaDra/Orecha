@@ -73,12 +73,12 @@ public class FriendRequestActivity extends AppCompatActivity {
     public void onStart() {
         super.onStart();
         friendRequestAdapter.startListening();
-        setUnseenFriendRequestToZero();
     }
 
     @Override
     public void onStop() {
         super.onStop();
         friendRequestAdapter.stopListening();
+        setUnseenFriendRequestToZero();
     }
 }

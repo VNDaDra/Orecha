@@ -32,9 +32,11 @@ import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.WriteBatch;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.OnProgressListener;
@@ -318,7 +320,6 @@ public class ChatActivity extends AppCompatActivity {
         });
     }
 
-
     private void setLastMessageTime() {
         if (lastMessageTime != null) {
             db.collection("rooms").document(firebaseUser.getUid())
@@ -353,13 +354,28 @@ public class ChatActivity extends AppCompatActivity {
 
         batch.set(friendMessagesRef, messageInfo);
 
-        batch.commit().addOnFailureListener(new OnFailureListener() {
+        batch.commit()
+            .addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception e) {
                 Toast.makeText(getApplicationContext(), "Không thể gửi tin nhắn",
                         Toast.LENGTH_SHORT).show();
             }
+        }).addOnSuccessListener(new OnSuccessListener<Void>() {
+            @Override
+            public void onSuccess(Void aVoid) {
+                increaseUnseenCounter(friendId);
+            }
         });
+    }
+
+    private void increaseUnseenCounter(String friendId) {
+        DocumentReference requestRef = db
+                .collection("messages").document(friendId)
+                .collection("messagesWith").document(roomId);
+        Map<String, Object> unseenCounter = new HashMap<>();
+        unseenCounter.put("unseen", FieldValue.increment(1));
+        requestRef.set(unseenCounter, SetOptions.merge());
     }
 
     private void moveToProfileActivity() {
@@ -384,6 +400,13 @@ public class ChatActivity extends AppCompatActivity {
         });
     }
 
+    private void setUnseenMessageToZero () {
+        DocumentReference requestRef = db
+                .collection("messages").document(firebaseUser.getUid())
+                .collection("messagesWith").document(roomId);
+        requestRef.update("unseen", 0);
+    }
+
     @Override
     protected void onStart() {
         super.onStart();
@@ -394,5 +417,6 @@ public class ChatActivity extends AppCompatActivity {
     public void onStop() {
         super.onStop();
         chatAdapter.stopListening();
+        setUnseenMessageToZero();
     }
 }

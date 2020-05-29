@@ -25,6 +25,7 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
@@ -70,19 +71,11 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Rooms, ChatListAda
     }
 
     public void onBindViewHolder(ViewHolder holder, int position, Rooms room) {
-        holder.displayName.setText(room.getDisplayName());
+        displayFriendInformation(room.getFriendId(), holder);
 
-        if (!room.getPhotoUrl().equals("")) {
-            Glide.with(context)
-                    .load(storage.getReferenceFromUrl(room.getPhotoUrl()))
-                    .placeholder(R.drawable.orange)
-                    .into(holder.avatar);
-        } else Glide.with(context)
-                .load(R.drawable.orange)
-                .placeholder(R.drawable.orange)
-                .into(holder.avatar);
+        displayLastMessage(room.getRoomId(), holder);
 
-        getLastMessage(room.getRoomId(), holder.lastMessageTextView, holder.time);
+        displayUnseenMessage(room.getRoomId(), holder);
 
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -115,7 +108,6 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Rooms, ChatListAda
                 return true;
             }
         });
-
     }
 
     @Nonnull
@@ -135,20 +127,45 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Rooms, ChatListAda
         Log.d(TAG, Objects.requireNonNull(e.getMessage()));
     }
 
-    class ViewHolder extends RecyclerView.ViewHolder {
-        TextView displayName, lastMessageTextView, time;
+    static class ViewHolder extends RecyclerView.ViewHolder {
+        TextView displayName, lastMessage, time, unseen;
         ImageView avatar;
         ViewHolder(View itemView) {
             super(itemView);
             displayName = itemView.findViewById(R.id.textView_display_name);
-            lastMessageTextView = itemView.findViewById(R.id.textView_last_message);
+            lastMessage = itemView.findViewById(R.id.textView_last_message);
             time = itemView.findViewById(R.id.textView_time);
+            unseen = itemView.findViewById(R.id.textView_unseen);
             avatar = itemView.findViewById(R.id.imageView_avatar);
         }
     }
 
+    private void displayFriendInformation(String friendId, ViewHolder holder) {
+        DocumentReference friendRef = db
+                .collection("users").document(friendId);
+        friendRef.addSnapshotListener(new EventListener<DocumentSnapshot>() {
+            @Override
+            public void onEvent(@Nullable DocumentSnapshot snapshot, @Nullable FirebaseFirestoreException e) {
+                if (e != null) {
+                    Log.d(TAG, "Listen failed.", e);
+                    return;
+                }
+                Users friend = snapshot.toObject(Users.class);
+                holder.displayName.setText(friend.getDisplayName());
+                if (!friend.getPhotoUrl().equals("")) {
+                    Glide.with(context)
+                            .load(storage.getReferenceFromUrl(friend.getPhotoUrl()))
+                            .placeholder(R.drawable.orange)
+                            .into(holder.avatar);
+                } else Glide.with(context)
+                        .load(R.drawable.orange)
+                        .placeholder(R.drawable.orange)
+                        .into(holder.avatar);
+            }
+        });
+    }
 
-    private void getLastMessage(String roomId, TextView lastMessageTextView, TextView time) {
+    private void displayLastMessage(String roomId, ViewHolder holder) {
         CollectionReference messagesRef = db
                 .collection("messages").document(currentUserData.getId())
                 .collection("messagesWith").document(roomId)
@@ -170,22 +187,45 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Rooms, ChatListAda
                             date = lastMesObj.getTime().toDate();
                         }
                         if (lastMessage.equals("")) {
-                            lastMessageTextView.setVisibility(View.GONE);
-                            time.setVisibility(View.GONE);
+                            holder.lastMessage.setVisibility(View.INVISIBLE);
+                            holder.time.setVisibility(View.INVISIBLE);
                         }
                         else if (type.equals("image")) {
-                            lastMessageTextView.setText("[Hình ảnh]");
-                            time.setText(formatDate(date));
+                            holder.lastMessage.setText(R.string.image_tag); // [Hinh anh]
+                            holder.time.setText(formatDate(date));
                         }
                         else {
-                            lastMessageTextView.setText(lastMessage);
-                            time.setText(formatDate(date));
+                            holder.lastMessage.setText(lastMessage);
+                            holder.time.setText(formatDate(date));
                         }
 
                         lastMessage = "";
                     }
                 });
+    }
 
+    private void displayUnseenMessage(String roomId, ViewHolder holder) {
+        DocumentReference requestRef = db
+                .collection("messages").document(currentUserData.getId())
+                .collection("messagesWith").document(roomId);
+        requestRef.addSnapshotListener(new EventListener<DocumentSnapshot>() {
+            @Override
+            public void onEvent(@Nullable DocumentSnapshot snapshot, @Nullable FirebaseFirestoreException e) {
+                if (snapshot != null && snapshot.exists()) {
+                    int unseenCounter = snapshot.getLong("unseen").intValue();
+                    if (unseenCounter > 0 && unseenCounter < 9) {
+                        holder.unseen.setText(String.valueOf(unseenCounter));
+                        holder.unseen.setVisibility(View.VISIBLE);
+                    } else if (unseenCounter > 9) {
+                        holder.unseen.setText("9+");
+                        holder.unseen.setVisibility(View.VISIBLE);
+                    }
+                    else {
+                        holder.unseen.setVisibility(View.INVISIBLE);
+                    }
+                }
+            }
+        });
     }
 
     private String formatDate(Date date) {
