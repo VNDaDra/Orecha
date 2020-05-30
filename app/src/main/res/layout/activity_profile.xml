@@ -25,6 +25,7 @@
     </androidx.appcompat.widget.Toolbar>
 
     <LinearLayout
+        android:id="@+id/profile_top_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
@@ -81,6 +82,7 @@
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/profile_bottom_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_weight="0.4"
@@ -111,9 +113,9 @@
                 android:layout_weight="0.8"
                 android:background="@drawable/profile_edit_text"
                 android:maxLines="1"
-                android:text="@string/placeholder_message"
                 android:textSize="16sp"
-                android:inputType="textEmailAddress" />
+                android:inputType="textEmailAddress"
+                android:enabled="false"/>
 
             <ImageButton
                 android:id="@+id/profile_edit_email"
@@ -148,9 +150,10 @@
             android:layout_weight="0.8"
             android:background="@drawable/profile_edit_text"
             android:maxLines="1"
-            android:text="@string/placeholder_message"
+            android:maxLength="30"
             android:textSize="16sp"
-            android:inputType="textPersonName" />
+            android:inputType="textPersonName"
+            android:enabled="false"/>
 
         <ImageButton
             android:id="@+id/profile_edit_name"
@@ -187,8 +190,8 @@
                 android:maxLines="1"
                 android:maxLength="15"
                 android:inputType="phone"
-                android:text="@string/placeholder_name"
-                android:textSize="16sp" />
+                android:textSize="16sp"
+                android:enabled="false"/>
 
             <ImageButton
                 android:id="@+id/profile_edit_phone"
@@ -208,7 +211,8 @@
             android:layout_gravity="center_horizontal"
             android:layout_marginTop="50dp"
             android:backgroundTint="@color/orange300"
-            android:text="@string/update_profile" />
+            android:text="@string/update_profile"
+            android:enabled="false"/>
 
     </LinearLayout>
 

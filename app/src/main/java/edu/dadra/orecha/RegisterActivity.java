@@ -1,5 +1,6 @@
 package edu.dadra.orecha;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.Spannable;
@@ -8,7 +9,9 @@ import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.util.Log;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -31,42 +34,70 @@ import java.util.Map;
 
 public class RegisterActivity extends AppCompatActivity {
 
-    private final String TAG = "RegisterActivity";
+    private static final String TAG = "RegisterActivity";
 
+    private LinearLayout registerLayout;
     private TextInputLayout emailField, passwordField, rePasswordField;
     private Button registerButton;
     private TextView hintRegisterText;
-    private String hintString;
 
-    private AlertDialog.Builder builder;
     private AlertDialog progressDialog;
 
-    private String authEmail, authPassword;
     private FirebaseAuth mAuth;
-    private FirebaseFirestore db = FirebaseFirestore.getInstance();
+    private FirebaseFirestore db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
 
-        emailField = findViewById(R.id.registerEmailEditText);
-        passwordField = findViewById(R.id.registerPasswordEditText);
-        rePasswordField = findViewById(R.id.registerRePasswordEditText);
-        registerButton = findViewById(R.id.registerButton);
-        hintRegisterText = findViewById(R.id.hintRegisterTextView);
+        initLayout();
 
-        builder = new AlertDialog.Builder(this);
-        builder.setCancelable(false); // if you want user to wait for some process to finish,
+        displaySpannableString();
+
+        initProgressDialog();
+
+        mAuth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
+
+        registerButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String authEmail = emailField.getEditText().getText().toString().trim();
+                String authPassword = passwordField.getEditText().getText().toString().trim();
+                createAccount(authEmail, authPassword);
+            }
+        });
+
+        registerLayout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                hideKeyboard();
+            }
+        });
+
+    }
+
+    private void initLayout() {
+        registerLayout = findViewById(R.id.register_layout);
+        emailField = findViewById(R.id.register_email);
+        passwordField = findViewById(R.id.register_password);
+        rePasswordField = findViewById(R.id.register_rePassword);
+        registerButton = findViewById(R.id.register_button);
+        hintRegisterText = findViewById(R.id.register_hint);
+    }
+
+    private void initProgressDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setCancelable(false);
         builder.setView(R.layout.layout_loading_dialog);
         progressDialog = builder.create();
         progressDialog.dismiss();
+    }
 
-        mAuth = FirebaseAuth.getInstance();
-
-        hintString = "Đã có tài khoản";
+    private void displaySpannableString() {
         hintRegisterText.setMovementMethod(LinkMovementMethod.getInstance());
-        hintRegisterText.setText(hintString, TextView.BufferType.SPANNABLE);
+        hintRegisterText.setText(R.string.hint_login, TextView.BufferType.SPANNABLE);
         Spannable registerSpannable = (Spannable) hintRegisterText.getText();
 
         ClickableSpan registerClickableSpan = new ClickableSpan() {
@@ -76,16 +107,6 @@ public class RegisterActivity extends AppCompatActivity {
             }
         };
         registerSpannable.setSpan(registerClickableSpan, 0, registerSpannable.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-        registerButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                authEmail = emailField.getEditText().getText().toString().trim();
-                authPassword = passwordField.getEditText().getText().toString().trim();
-                createAccount(authEmail, authPassword);
-            }
-        });
-
     }
 
     private void createAccount(String email, String password) {
@@ -101,18 +122,18 @@ public class RegisterActivity extends AppCompatActivity {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
-                            Log.d(TAG,"Create success");
+                            Log.d(TAG,"Create account success");
                             FirebaseUser user = mAuth.getCurrentUser();
                             addUserInformation(user);
                             Toast.makeText(RegisterActivity.this, "Đăng kí thành công",
                                     Toast.LENGTH_SHORT).show();
                         } else {
-                            Log.d(TAG,"Create failed");
+                            Log.d(TAG,"Create account failed");
                             Toast.makeText(RegisterActivity.this, "Đăng kí thất bại! Vui lòng kiểm tra lại thông tin",
-                                    Toast.LENGTH_SHORT).show();
+                                    Toast.LENGTH_LONG).show();
+                            progressDialog.dismiss();
                         }
 
-                        progressDialog.dismiss();
                     }
                 });
     }
@@ -167,7 +188,8 @@ public class RegisterActivity extends AppCompatActivity {
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
-                        Log.d(TAG, "DocumentSnapshot successfully written!");
+                        moveToMainActivity();
+                        progressDialog.dismiss();
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
@@ -176,16 +198,24 @@ public class RegisterActivity extends AppCompatActivity {
                         Log.d(TAG, "Error writing document", e);
                     }
                 });
+    }
 
+    private void hideKeyboard() {
+        View view = this.getCurrentFocus();
+        if (view != null) {
+            InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
     }
 
     private void moveToLoginActivity() {
-        Intent mainIntent = new Intent(getApplicationContext(), LoginActivity.class);
+        finish();
+    }
+
+    private void moveToMainActivity() {
+        Intent mainIntent = new Intent(getApplicationContext(), MainActivity.class);
         mainIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(mainIntent);
         finish();
     }
-
-
-
 }

@@ -8,6 +8,7 @@
     android:background="@color/gray200">
 
     <LinearLayout
+        android:id="@+id/login_layout"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_margin="16dp"
@@ -25,7 +26,7 @@
             android:layout_marginBottom="80dp"/>
 
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/loginEmailEditText"
+            android:id="@+id/login_email"
             style="@style/FillRoundEditText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -43,7 +44,7 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/loginPasswordEditText"
+            android:id="@+id/login_password"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="24dp"
@@ -63,14 +64,14 @@
 
         <com.google.android.material.button.MaterialButton
             style="@style/BigButton"
-            android:id="@+id/loginButton"
+            android:id="@+id/login_button"
             android:layout_width="250dp"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
             android:text="@string/login_button"/>
 
         <TextView
-            android:id="@+id/statusLoginTextView"
+            android:id="@+id/login_status"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="30dp"
@@ -78,7 +79,7 @@
             android:textColor="@android:color/holo_red_dark"/>
 
         <TextView
-            android:id="@+id/hintLoginTextView"
+            android:id="@+id/login_hint"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="80dp"

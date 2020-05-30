@@ -1,11 +1,15 @@
 package edu.dadra.orecha;
 
+import android.annotation.SuppressLint;
 import android.content.ContentResolver;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.webkit.MimeTypeMap;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -167,9 +171,12 @@ public class ChatActivity extends AppCompatActivity {
         });
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private void displayMessages() {
-        CollectionReference allMessageRef = db.collection("messages").document(firebaseUser.getUid())
-                .collection("messagesWith").document(roomId).collection("messagesOfThisRoom");
+        CollectionReference allMessageRef = db
+                .collection("messages").document(firebaseUser.getUid())
+                .collection("messagesWith").document(roomId)
+                .collection("messagesOfThisRoom");
         Query query = allMessageRef.orderBy("time", Query.Direction.ASCENDING);
 
         FirestoreRecyclerOptions<Message> options = new FirestoreRecyclerOptions.Builder<Message>()
@@ -183,6 +190,13 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
         chatRecyclerView.setAdapter(chatAdapter);
+        chatRecyclerView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                hideKeyboard();
+                return false;
+            }
+        });
     }
 
     private void chooseImage() {
@@ -405,6 +419,14 @@ public class ChatActivity extends AppCompatActivity {
                 .collection("messages").document(firebaseUser.getUid())
                 .collection("messagesWith").document(roomId);
         requestRef.update("unseen", 0);
+    }
+
+    private void hideKeyboard() {
+        View view = this.getCurrentFocus();
+        if (view != null) {
+            InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
     }
 
     @Override

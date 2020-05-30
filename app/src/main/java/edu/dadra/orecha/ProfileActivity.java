@@ -2,6 +2,7 @@ package edu.dadra.orecha;
 
 import android.app.ProgressDialog;
 import android.content.ContentResolver;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
@@ -10,6 +11,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.webkit.MimeTypeMap;
 import android.widget.Button;
 import android.widget.EditText;
@@ -57,6 +59,7 @@ public class ProfileActivity extends AppCompatActivity {
     private FirebaseStorage storage;
     private StorageReference storageReference;
 
+    private LinearLayout topLayout, bottomLayout;
     private ImageView profileAvatar;
     private TextView profileTitleName;
     private EditText profileEmail, profilePhone, profileName;
@@ -86,17 +89,17 @@ public class ProfileActivity extends AppCompatActivity {
 
         confirmChangeAvatar();
 
+        layoutListener();
+
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case android.R.id.home:
-                finish();
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
+        if (item.getItemId() == android.R.id.home) {
+            finish();
+            return true;
         }
+        return super.onOptionsItemSelected(item);
     }
 
     private void initFirebase() {
@@ -108,6 +111,9 @@ public class ProfileActivity extends AppCompatActivity {
 
     private void initLayout() {
         Toolbar toolbar = findViewById(R.id.profile_toolbar);
+        topLayout = findViewById(R.id.profile_top_layout);
+        bottomLayout = findViewById(R.id.profile_bottom_layout);
+
         profileAvatar = findViewById(R.id.profile_avatar);
         profileTitleName = findViewById(R.id.profile_title_name);
         profileDeclineButton = findViewById(R.id.profile_decline);
@@ -127,15 +133,6 @@ public class ProfileActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayShowTitleEnabled(false);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        profileName.setEnabled(false);
-        profileEmail.setEnabled(false);
-        profilePhone.setEnabled(false);
-        updateProfileButton.setEnabled(false);
-
-        profileName.setText("");
-        profileEmail.setText("");
-        profilePhone.setText("");
-
         profileEditEmailButton.setVisibility(View.INVISIBLE); //User can't change email right now
 
         //Friend view
@@ -151,8 +148,8 @@ public class ProfileActivity extends AppCompatActivity {
         }
     }
 
-    private void getUserData(String id) {
-        db.collection("users").document(id)
+    private void getUserData(String userId) {
+        db.collection("users").document(userId)
                 .addSnapshotListener(new EventListener<DocumentSnapshot>() {
                     @Override
                     public void onEvent(@Nullable DocumentSnapshot snapshot, @Nullable FirebaseFirestoreException e) {
@@ -429,6 +426,30 @@ public class ProfileActivity extends AppCompatActivity {
         } else profileName.setError(null);
 
         return valid;
+    }
+
+    private void layoutListener() {
+        topLayout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                hideKeyboard();
+            }
+        });
+
+        bottomLayout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                hideKeyboard();
+            }
+        });
+    }
+
+    private void hideKeyboard() {
+        View view = this.getCurrentFocus();
+        if (view != null) {
+            InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
     }
 
 }

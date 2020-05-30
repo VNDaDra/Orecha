@@ -8,6 +8,7 @@
     android:background="@color/gray200">
 
     <LinearLayout
+        android:id="@+id/register_layout"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_margin="16dp"
@@ -25,15 +26,15 @@
             android:src="@drawable/orange"/>
 
         <com.google.android.material.textfield.TextInputLayout
-            style="@style/FillRoundEditText"
-            android:id="@+id/registerEmailEditText"
+            android:id="@+id/register_email"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="24dp"
             android:autofillHints=""
             android:hint="@string/login_email"
             android:inputType="textEmailAddress"
-            app:startIconDrawable="@drawable/person_icon">
+            app:startIconDrawable="@drawable/person_icon"
+            style="@style/FillRoundEditText">
             <com.google.android.material.textfield.TextInputEditText
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -43,15 +44,15 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
-            style="@style/FillRoundEditText"
-            android:id="@+id/registerPasswordEditText"
+            android:id="@+id/register_password"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="24dp"
             android:autofillHints=""
             android:hint="@string/login_password"
             app:endIconMode="password_toggle"
-            app:startIconDrawable="@drawable/lock_icon">
+            app:startIconDrawable="@drawable/lock_icon"
+            style="@style/FillRoundEditText">
             <com.google.android.material.textfield.TextInputEditText
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -61,8 +62,7 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
-            style="@style/FillRoundEditText"
-            android:id="@+id/registerRePasswordEditText"
+            android:id="@+id/register_rePassword"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="24dp"
@@ -70,7 +70,8 @@
             android:autofillHints=""
             android:hint="@string/retype_password"
             app:endIconMode="password_toggle"
-            app:startIconDrawable="@drawable/lock_icon">
+            app:startIconDrawable="@drawable/lock_icon"
+            style="@style/FillRoundEditText">
             <com.google.android.material.textfield.TextInputEditText
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -80,15 +81,15 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.button.MaterialButton
-            style="@style/BigButton"
-            android:id="@+id/registerButton"
+            android:id="@+id/register_button"
             android:layout_width="250dp"
             android:layout_height="wrap_content"
             android:layout_marginBottom="30dp"
-            android:text="@string/register_button"/>
+            android:text="@string/register_button"
+            style="@style/BigButton"/>
 
         <TextView
-            android:id="@+id/hintRegisterTextView"
+            android:id="@+id/register_hint"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="80dp"

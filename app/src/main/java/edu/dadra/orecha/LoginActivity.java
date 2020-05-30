@@ -1,6 +1,7 @@
 package edu.dadra.orecha;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.Spannable;
@@ -9,7 +10,9 @@ import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.util.Log;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -26,11 +29,13 @@ import com.google.firebase.auth.FirebaseUser;
 
 public class LoginActivity extends AppCompatActivity {
 
+    private static final String TAG = "LoginActivity";
+
+    private LinearLayout loginLayout;
     private Button loginButton;
     private TextView statusLogin, hintLoginText;
-    private String authEmail, authPassword, hintString;
+    private String authEmail, authPassword;
     private TextInputLayout emailField, passwordField;
-    private AlertDialog.Builder builder;
     private AlertDialog progressDialog;
 
     private FirebaseAuth mAuth;
@@ -40,23 +45,43 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        emailField = findViewById(R.id.loginEmailEditText);
-        passwordField = findViewById(R.id.loginPasswordEditText);
-        loginButton = findViewById(R.id.loginButton);
-        statusLogin = findViewById(R.id.statusLoginTextView);
-        hintLoginText = findViewById(R.id.hintLoginTextView);
+        initLayout();
+
+        displaySpannableString();
+
+        initProgressDialog();
+
+        loginButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                authEmail = emailField.getEditText().getText().toString().trim();
+                authPassword = passwordField.getEditText().getText().toString().trim();
+                login(authEmail, authPassword);
+            }
+        });
+
+        loginLayout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                hideKeyboard();
+            }
+        });
 
         mAuth = FirebaseAuth.getInstance();
+    }
 
-        builder = new AlertDialog.Builder(this);
-        builder.setCancelable(false);
-        builder.setView(R.layout.layout_loading_dialog);
-        progressDialog = builder.create();
-        progressDialog.dismiss();
+    private void initLayout() {
+        loginLayout = findViewById(R.id.login_layout);
+        emailField = findViewById(R.id.login_email);
+        passwordField = findViewById(R.id.login_password);
+        loginButton = findViewById(R.id.login_button);
+        statusLogin = findViewById(R.id.login_status);
+        hintLoginText = findViewById(R.id.login_hint);
+    }
 
-        hintString = "Chưa có tài khoản";
+    private void displaySpannableString() {
         hintLoginText.setMovementMethod(LinkMovementMethod.getInstance());
-        hintLoginText.setText(hintString, TextView.BufferType.SPANNABLE);
+        hintLoginText.setText(R.string.hint_register, TextView.BufferType.SPANNABLE);
         Spannable loginSpannable = (Spannable) hintLoginText.getText();
 
         ClickableSpan registerClickableSpan = new ClickableSpan() {
@@ -66,34 +91,21 @@ public class LoginActivity extends AppCompatActivity {
             }
         };
         loginSpannable.setSpan(registerClickableSpan, 0, loginSpannable.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-        loginButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                authEmail = emailField.getEditText().getText().toString().trim();
-                authPassword = passwordField.getEditText().getText().toString().trim();
-                logIn(authEmail, authPassword);
-            }
-        });
-
-
     }
 
-    @Override
-    public void onStart() {
-        super.onStart();
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-        if (currentUser != null) {
-            moveToMainActivity();
-        }
+    private void initProgressDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setCancelable(false);
+        builder.setView(R.layout.layout_loading_dialog);
+        progressDialog = builder.create();
+        progressDialog.dismiss();
     }
 
-    private void logIn(String email, String password) {
-        Log.d("signIn", email);
+    private void login(String email, String password) {
+        Log.d(TAG, email);
         if (!validateLoginForm()) {
             return;
         }
-
         progressDialog.show();
 
         mAuth.signInWithEmailAndPassword(email, password)
@@ -102,16 +114,12 @@ public class LoginActivity extends AppCompatActivity {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
-                            Log.d("Login", "logInWithEmail: success");
-                            FirebaseUser user = mAuth.getCurrentUser();
+                            Log.d(TAG, "loginWithEmail: success");
                             moveToMainActivity();
                         } else {
-                            Log.d("Login", "logInWithEmail: fail");
-                            Toast.makeText(LoginActivity.this, "Không thể xác nhận người dùng",
+                            Log.d(TAG, "loginWithEmail: fail");
+                            Toast.makeText(LoginActivity.this, "Không thể xác minh người dùng",
                                     Toast.LENGTH_SHORT).show();
-                        }
-
-                        if (!task.isSuccessful()) {
                             statusLogin.setText("Đăng nhập thất bại");
                         }
                         progressDialog.dismiss();
@@ -147,8 +155,25 @@ public class LoginActivity extends AppCompatActivity {
 
     private void moveToMainActivity() {
         Intent mainIntent = new Intent(getApplicationContext(), MainActivity.class);
-        mainIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        mainIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         startActivity(mainIntent);
         finish();
+    }
+
+    private void hideKeyboard() {
+        View view = this.getCurrentFocus();
+        if (view != null) {
+            InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser != null) {
+            moveToMainActivity();
+        }
     }
 }
