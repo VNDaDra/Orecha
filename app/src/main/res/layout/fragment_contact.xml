@@ -29,7 +29,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:paddingHorizontal="20dp"
+        android:paddingHorizontal="15dp"
         android:paddingVertical="5dp"
         android:layout_marginVertical="5dp"
         app:layout_constraintStart_toStartOf="parent"
@@ -41,7 +41,7 @@
             android:layout_width="45dp"
             android:layout_height="45dp"
             android:layout_marginEnd="20dp"
-            android:src="@drawable/friend_request"/>
+            android:src="@drawable/contact_book"/>
 
         <TextView
             android:layout_width="wrap_content"

@@ -96,9 +96,10 @@
         <ImageButton
             android:id="@+id/chat_choose_image_iButton"
             android:layout_width="wrap_content"
-            android:layout_height="fill_parent"
-            android:paddingHorizontal="15dp"
+            android:layout_height="wrap_content"
+            android:padding="15dp"
             android:src="@drawable/image"
+            android:layout_gravity="bottom"
             android:background="?android:selectableItemBackground"/>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -123,7 +124,7 @@
         <ImageButton
             android:id="@+id/chat_send_iButton"
             android:layout_width="wrap_content"
-            android:layout_height="fill_parent"
+            android:layout_height="wrap_content"
             android:layout_gravity="bottom"
             android:padding="15dp"
             android:src="@drawable/send_button"

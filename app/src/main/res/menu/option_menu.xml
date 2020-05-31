@@ -5,6 +5,13 @@
     <item
         android:title="@string/add_friend"
         android:id="@+id/find_friend_option"
+        android:icon="@drawable/search"
+        app:showAsAction="ifRoom">
+    </item>
+
+    <item
+        android:title="@string/change_password"
+        android:id="@+id/change_password_option"
         app:showAsAction="never">
     </item>
 

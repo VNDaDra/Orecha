@@ -125,11 +125,9 @@ public class RegisterActivity extends AppCompatActivity {
                             Log.d(TAG,"Create account success");
                             FirebaseUser user = mAuth.getCurrentUser();
                             addUserInformation(user);
-                            Toast.makeText(RegisterActivity.this, "Đăng kí thành công",
-                                    Toast.LENGTH_SHORT).show();
                         } else {
                             Log.d(TAG,"Create account failed");
-                            Toast.makeText(RegisterActivity.this, "Đăng kí thất bại! Vui lòng kiểm tra lại thông tin",
+                            Toast.makeText(RegisterActivity.this, "Đăng kí thất bại\n" + task.getException().getMessage(),
                                     Toast.LENGTH_LONG).show();
                             progressDialog.dismiss();
                         }
@@ -179,7 +177,7 @@ public class RegisterActivity extends AppCompatActivity {
 
         personalData.put("email", user.getEmail());
         personalData.put("id", user.getUid());
-        personalData.put("displayName", user.getEmail());
+        personalData.put("displayName", user.getEmail().substring(0, user.getEmail().indexOf("@")));
         personalData.put("phone", "");
         personalData.put("photoUrl", "");
 
@@ -188,6 +186,8 @@ public class RegisterActivity extends AppCompatActivity {
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
+                        Toast.makeText(getApplicationContext(), "Nhấn vào ảnh đại diện để thay đổi thông tin",
+                                Toast.LENGTH_LONG).show();
                         moveToMainActivity();
                         progressDialog.dismiss();
                     }
@@ -196,6 +196,7 @@ public class RegisterActivity extends AppCompatActivity {
                     @Override
                     public void onFailure(@NonNull Exception e) {
                         Log.d(TAG, "Error writing document", e);
+                        progressDialog.dismiss();
                     }
                 });
     }

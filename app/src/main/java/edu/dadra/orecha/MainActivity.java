@@ -127,6 +127,9 @@ public class MainActivity extends AppCompatActivity {
         if (item.getItemId() == R.id.find_friend_option) {
             showAddFriendDialog();
         }
+        if (item.getItemId() == R.id.change_password_option) {
+            moveToChangePasswordActivity();
+        }
         if (item.getItemId() == R.id.logout_option) {
             confirmLogout();
         }
@@ -330,6 +333,12 @@ public class MainActivity extends AppCompatActivity {
         Map<String, Object> unseenCounter = new HashMap<>();
         unseenCounter.put("unseen", FieldValue.increment(1));
         requestRef.set(unseenCounter, SetOptions.merge());
+    }
+
+    private void moveToChangePasswordActivity() {
+        Intent changePasswordIntent = new Intent(getApplicationContext(), ChangePassword.class);
+        changePasswordIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(changePasswordIntent);
     }
 
     private void logout() {

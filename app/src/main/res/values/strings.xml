@@ -38,4 +38,8 @@
     <string name="make_friend">Kết bạn</string>
     <string name="profile">Trang cá nhân</string>
     <string name="image_tag">[Hình ảnh]</string>
+    <string name="change_password">Đổi mật khẩu</string>
+    <string name="old_password">Mật khẩu cũ</string>
+    <string name="new_password">Mật khẩu mới</string>
+    <string name="new_retype_password">Nhập lại mật khẩu mới</string>
 </resources>

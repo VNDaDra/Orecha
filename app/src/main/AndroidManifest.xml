@@ -14,24 +14,34 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
+            android:name=".ChangePassword"
+            android:parentActivityName=".MainActivity" />
+
+        <activity
             android:name=".FriendRequestActivity"
-            android:parentActivityName=".MainActivity"/>
+            android:parentActivityName=".MainActivity" />
+
         <activity android:name=".FullScreenImageActivity" />
+
         <activity
             android:name=".ProfileActivity"
-            android:parentActivityName=".MainActivity"/>
+            android:parentActivityName=".MainActivity" />
+
         <activity
             android:name=".ChatActivity"
             android:parentActivityName=".MainActivity" />
+
         <activity android:name=".RegisterActivity" />
+
         <activity android:name=".LoginActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <activity android:name=".MainActivity" />
+
     </application>
 
 </manifest>
