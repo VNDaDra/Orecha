@@ -18,31 +18,33 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.RequestOptions;
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
 import edu.dadra.orecha.FullScreenImageActivity;
 import edu.dadra.orecha.Model.Message;
+import edu.dadra.orecha.Model.Users;
 import edu.dadra.orecha.R;
 
 public class ChatAdapter extends FirestoreRecyclerAdapter<Message, ChatAdapter.ViewHolder> {
 
-    private static final int MSG_TEXT_LEFT = 0;
-    private static final int MSG_TEXT_RIGHT = 1;
-    private static final int MSG_IMAGE_LEFT = 2;
-    private static final int MSG_IMAGE_RIGHT = 3;
+    private static final int MSG_TEXT_LEFT = 1;
+    private static final int MSG_TEXT_RIGHT = 2;
+    private static final int MSG_IMAGE_LEFT = 3;
+    private static final int MSG_IMAGE_RIGHT = 4;
 
     private FirebaseFirestore db;
     private FirebaseStorage storage;
-
-    private Context context;
-
     private FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+    private Context context;
 
     public ChatAdapter(@NonNull FirestoreRecyclerOptions<Message> options) {
         super(options);
@@ -51,12 +53,34 @@ public class ChatAdapter extends FirestoreRecyclerAdapter<Message, ChatAdapter.V
     @Override
     protected void onBindViewHolder(@NonNull ViewHolder holder, int position, @NonNull Message message) {
         if (message.getType().equals("text")) {
-            holder.message.setText(message.getMessage());
-            holder.message.setOnLongClickListener(new View.OnLongClickListener() {
+            holder.body.setText(message.getMessage());
+            holder.body.setOnLongClickListener(new View.OnLongClickListener() {
                 @Override
                 public boolean onLongClick(View v) {
                     showDeleteDialog(message);
                     return true;
+                }
+            });
+        }
+
+        if (holder.getItemViewType() == 1 || holder.getItemViewType() == 3) {
+            db.collection("users").document(message.getSenderId())
+                    .get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+                @Override
+                public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                    if (task.isSuccessful()) {
+                        Users sender = task.getResult().toObject(Users.class);
+                        if (!sender.getPhotoUrl().equals("")) {
+                            Glide.with(context)
+                                    .load(storage.getReferenceFromUrl(sender.getPhotoUrl()))
+                                    .placeholder(R.drawable.orange)
+                                    .override(25,25)
+                                    .into(holder.avatar);
+                        } else Glide.with(context)
+                                .load(R.drawable.orange)
+                                .into(holder.avatar);
+
+                    }
                 }
             });
         }
@@ -97,17 +121,22 @@ public class ChatAdapter extends FirestoreRecyclerAdapter<Message, ChatAdapter.V
         db = FirebaseFirestore.getInstance();
         storage = FirebaseStorage.getInstance();
 
-        if(viewType == MSG_TEXT_RIGHT) {
-            view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_message_sender, parent, false);
-        }
-        else if (viewType == MSG_TEXT_LEFT) {
-            view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_message_receiver, parent, false);
-        }
-        else if (viewType == MSG_IMAGE_RIGHT) {
-            view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_image_sender, parent, false);
-        }
-        else {
-            view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_image_receiver, parent, false);
+        switch (viewType) {
+            case MSG_TEXT_LEFT:
+                view = LayoutInflater.from(parent.getContext())
+                        .inflate(R.layout.item_message_receiver, parent, false);
+                break;
+            case MSG_IMAGE_LEFT:
+                view = LayoutInflater.from(parent.getContext())
+                        .inflate(R.layout.item_image_receiver, parent, false);
+                break;
+            case MSG_IMAGE_RIGHT:
+                view = LayoutInflater.from(parent.getContext())
+                        .inflate(R.layout.item_image_sender, parent, false);
+                break;
+            default:
+                view = LayoutInflater.from(parent.getContext())
+                        .inflate(R.layout.item_message_sender, parent, false);
         }
 
         return new ViewHolder(view);
@@ -115,11 +144,10 @@ public class ChatAdapter extends FirestoreRecyclerAdapter<Message, ChatAdapter.V
 
     @Override
     public int getItemViewType(int position) {
-        if(getItem(position).getType().equals("text")) {
+        if (getItem(position).getType().equals("text")) {
             if (getItem(position).getSenderId().equals(firebaseUser.getUid())) {
                 return MSG_TEXT_RIGHT;
-            }
-            else return MSG_TEXT_LEFT;
+            } else return MSG_TEXT_LEFT;
         }
         else {
             if (getItem(position).getSenderId().equals(firebaseUser.getUid())) {
@@ -130,14 +158,15 @@ public class ChatAdapter extends FirestoreRecyclerAdapter<Message, ChatAdapter.V
 
     }
 
-    class ViewHolder extends RecyclerView.ViewHolder {
-
-        TextView  message;
-        ImageView image;
+    static class ViewHolder extends RecyclerView.ViewHolder {
+        TextView  body;
+        ImageView image, avatar;
         ViewHolder(@NonNull View itemView) {
             super(itemView);
-            message = itemView.findViewById(R.id.message_body);
-            image = itemView.findViewById(R.id.message_image);
+            avatar = itemView.findViewById(R.id.message_avatar);
+            body = itemView.findViewById(R.id.message_body);
+
+            image = itemView.findViewById(R.id.message_image);      //image message
         }
     }
 
@@ -163,9 +192,6 @@ public class ChatAdapter extends FirestoreRecyclerAdapter<Message, ChatAdapter.V
                 .collection("messages").document(firebaseUser.getUid())
                 .collection("messagesWith").document(message.getRoomId())
                 .collection("messagesOfThisRoom").document(message.getId());
-//        DocumentReference friendMessageRef = db.collection("messages").document()
-//                .collection("messagesWith").document(message.getRoomId()).collection("messagesOfThisRoom")
-//                .document(message.getId());
 
         if (message.getType().equals("text")) {
             myMessageRef.delete();

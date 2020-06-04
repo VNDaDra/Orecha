@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:paddingVertical="2dp"
@@ -7,16 +9,31 @@
     android:paddingEnd="60dp"
     android:clipToPadding="false">
 
+    <de.hdodenhof.circleimageview.CircleImageView
+        android:id="@+id/message_avatar"
+        android:layout_width="25dp"
+        android:layout_height="25dp"
+        android:layout_marginEnd="10dp"
+        android:background="@drawable/avatar_circle"
+        android:contentDescription="@string/todo"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/message_body"/>
+
     <TextView
         android:id="@+id/message_body"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:paddingVertical="5dp"
+        android:paddingHorizontal="10dp"
         android:minWidth="40dp"
         android:maxWidth="250dp"
         android:background="@drawable/receiver_message"
-        android:paddingVertical="5dp"
-        android:paddingHorizontal="10dp"
         android:textSize="16sp"
         android:text="@string/placeholder_message"
-        />
-</RelativeLayout>
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@id/message_avatar"/>
+</androidx.constraintlayout.widget.ConstraintLayout>
