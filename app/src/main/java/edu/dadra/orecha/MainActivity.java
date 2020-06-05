@@ -56,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
 
     private Toolbar toolbar;
+    private AlertDialog dialog;
 
     private FirebaseUser firebaseUser;
     private FirebaseFirestore db;
@@ -64,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
 
     public static Users currentUserData;
 
-    BottomNavigationView bottomNavigationView;
+    private BottomNavigationView bottomNavigationView;
     private ImageView currentUserAvatar;
     private TextView mainTitle;
 
@@ -227,7 +228,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        final AlertDialog dialog = builder.create();
+        dialog = builder.create();
         dialog.show();
 
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
@@ -236,7 +237,6 @@ public class MainActivity extends AppCompatActivity {
                 String friendEmail = addFriendEmailField.getEditText().getText().toString().trim();
                 if (friendEmail.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
                     findUser(friendEmail);
-                    dialog.dismiss();
                 } else {
                     addFriendEmailField.setError("Không hợp lệ");
                 }
@@ -258,6 +258,7 @@ public class MainActivity extends AppCompatActivity {
                                 Toast.makeText(getApplicationContext(), "Không tìm thấy", Toast.LENGTH_SHORT).show();
                                 Log.d(TAG, "Error getting documents: ", task.getException());
                             } else {
+                                dialog.dismiss();
                                 for (QueryDocumentSnapshot document : Objects.requireNonNull(task.getResult())) {
                                     validateExistFriend(document);
                                 }
@@ -313,9 +314,9 @@ public class MainActivity extends AppCompatActivity {
         Map<String, Object> requestInfo = new HashMap<>();
         requestInfo.put("senderId", currentUserData.getId());
         requestInfo.put("senderName", currentUserData.getDisplayName());
+        requestInfo.put("senderAvatar", currentUserData.getPhotoUrl());
         requestInfo.put("receiverId", friendId);
         requestInfo.put("state", "waiting");
-        requestInfo.put("senderAvatar", currentUserData.getPhotoUrl());
         requestInfo.put("time", new Timestamp(new Date() ));
 
         friendRequestRef.set(requestInfo)

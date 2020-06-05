@@ -25,6 +25,7 @@
             android:layout_gravity="center"
             android:textSize="18sp"
             android:textStyle="bold"
+            android:textColor="@color/black"
             android:text="@string/view_avatar"/>
 
     </LinearLayout>
@@ -45,6 +46,7 @@
             android:layout_gravity="center"
             android:textSize="18sp"
             android:textStyle="bold"
+            android:textColor="@color/black"
             android:text="@string/change_avatar"/>
 
     </LinearLayout>

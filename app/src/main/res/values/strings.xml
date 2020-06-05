@@ -42,4 +42,8 @@
     <string name="old_password">Mật khẩu cũ</string>
     <string name="new_password">Mật khẩu mới</string>
     <string name="new_retype_password">Nhập lại mật khẩu mới</string>
+    <string name="create_group">Tạo nhóm</string>
+    <string name="download">Tải về</string>
+    <string name="not_beautiful">Chưa đẹp</string>
+    <string name="beautiful">Đẹp rồi</string>
 </resources>

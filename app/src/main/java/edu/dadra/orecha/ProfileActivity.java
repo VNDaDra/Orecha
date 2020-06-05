@@ -63,12 +63,11 @@ public class ProfileActivity extends AppCompatActivity {
     private ImageView profileAvatar;
     private TextView profileTitleName;
     private EditText profileEmail, profilePhone, profileName;
-    private Button updateProfileButton;
-    private ImageButton profileEditNameButton, profileEditEmailButton, profileEditPhoneButton,
-            profileDeclineButton, profileAcceptButton;
+    private Button updateProfileButton, avatarDeclineButton, avatarAcceptButton;
+    private ImageButton profileEditNameButton,  profileEditPhoneButton;
 
     private String userId;
-    private Users currentUserData;
+    private Users userData;
     private Uri filePath;
 
     @Override
@@ -116,14 +115,13 @@ public class ProfileActivity extends AppCompatActivity {
 
         profileAvatar = findViewById(R.id.profile_avatar);
         profileTitleName = findViewById(R.id.profile_title_name);
-        profileDeclineButton = findViewById(R.id.profile_decline);
-        profileAcceptButton = findViewById(R.id.profile_accept);
+        avatarDeclineButton = findViewById(R.id.profile_avatar_decline);
+        avatarAcceptButton = findViewById(R.id.profile_avatar_accept);
 
         profileEmail = findViewById(R.id.profile_email);
         profileName = findViewById(R.id.profile_name);
         profilePhone = findViewById(R.id.profile_phone);
 
-        profileEditEmailButton = findViewById(R.id.profile_edit_email);
         profileEditNameButton = findViewById(R.id.profile_edit_name);
         profileEditPhoneButton = findViewById(R.id.profile_edit_phone);
 
@@ -133,18 +131,16 @@ public class ProfileActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayShowTitleEnabled(false);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        profileEditEmailButton.setVisibility(View.INVISIBLE); //User can't change email right now
-
         //Friend view
         if (!userId.equals(firebaseUser.getUid())) {
             profileEmail.setTextColor(Color.BLACK);
             profileName.setTextColor(Color.BLACK);
             profilePhone.setTextColor(Color.BLACK);
+
             //Can't change friend information
-//            profileAvatar.setEnabled(false);
-            profileEditNameButton.setVisibility(View.GONE);
-            profileEditPhoneButton.setVisibility(View.GONE);
-            updateProfileButton.setVisibility(View.GONE);
+            profileEditNameButton.setVisibility(View.VISIBLE);
+            profileEditPhoneButton.setVisibility(View.VISIBLE);
+            updateProfileButton.setVisibility(View.VISIBLE);
         }
     }
 
@@ -159,10 +155,10 @@ public class ProfileActivity extends AppCompatActivity {
                         }
 
                         if (snapshot != null && snapshot.exists()) {
-                            currentUserData = snapshot.toObject(Users.class);
-                            if (!currentUserData.getPhotoUrl().equals("")) {
+                            userData = snapshot.toObject(Users.class);
+                            if (!userData.getPhotoUrl().equals("")) {
                                 Glide.with(getApplicationContext())
-                                        .load(storage.getReferenceFromUrl(currentUserData.getPhotoUrl()))
+                                        .load(storage.getReferenceFromUrl(userData.getPhotoUrl()))
                                         .placeholder(R.drawable.orange)
                                         .into(profileAvatar);
                             } else Glide.with(getApplicationContext())
@@ -170,10 +166,10 @@ public class ProfileActivity extends AppCompatActivity {
                                     .placeholder(R.drawable.orange)
                                     .into(profileAvatar);
 
-                            profileTitleName.setText(currentUserData.getDisplayName());
-                            profileName.setText(currentUserData.getDisplayName());
-                            profileEmail.setText(currentUserData.getEmail());
-                            profilePhone.setText(currentUserData.getPhone());
+                            profileTitleName.setText(userData.getDisplayName());
+                            profileName.setText(userData.getDisplayName());
+                            profileEmail.setText(userData.getEmail());
+                            profilePhone.setText(userData.getPhone());
                         }
                     }
                 });
@@ -238,7 +234,7 @@ public class ProfileActivity extends AppCompatActivity {
 
     private void viewAvatar() {
         Intent fullScreenImageIntent = new Intent(getApplicationContext(), FullScreenImageActivity.class);
-        fullScreenImageIntent.putExtra("imageUri", currentUserData.getPhotoUrl());
+        fullScreenImageIntent.putExtra("imageUri", userData.getPhotoUrl());
         startActivity(fullScreenImageIntent);
     }
 
@@ -259,21 +255,21 @@ public class ProfileActivity extends AppCompatActivity {
             Glide.with(getApplicationContext())
                     .load(filePath)
                     .into(profileAvatar);
-            profileDeclineButton.setVisibility(View.VISIBLE);
-            profileAcceptButton.setVisibility(View.VISIBLE);
+            avatarDeclineButton.setVisibility(View.VISIBLE);
+            avatarAcceptButton.setVisibility(View.VISIBLE);
 
         }
     }
 
     private void confirmChangeAvatar() {
-        profileDeclineButton.setOnClickListener(new View.OnClickListener() {
+        avatarDeclineButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                profileDeclineButton.setVisibility(View.GONE);
-                profileAcceptButton.setVisibility(View.GONE);
-                if (!currentUserData.getPhotoUrl().equals("")) {
+                avatarDeclineButton.setVisibility(View.GONE);
+                avatarAcceptButton.setVisibility(View.GONE);
+                if (!userData.getPhotoUrl().equals("")) {
                     Glide.with(getApplicationContext())
-                            .load(storage.getReferenceFromUrl(currentUserData.getPhotoUrl()))
+                            .load(storage.getReferenceFromUrl(userData.getPhotoUrl()))
                             .placeholder(R.drawable.orange)
                             .into(profileAvatar);
                 } else {
@@ -285,9 +281,11 @@ public class ProfileActivity extends AppCompatActivity {
             }
         });
 
-        profileAcceptButton.setOnClickListener(new View.OnClickListener() {
+        avatarAcceptButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                avatarDeclineButton.setVisibility(View.GONE);
+                avatarAcceptButton.setVisibility(View.GONE);
                 uploadAvatarToStorage();
             }
         });
@@ -299,15 +297,14 @@ public class ProfileActivity extends AppCompatActivity {
             progressDialog.setTitle("Tải lên");
             progressDialog.show();
 
-            StorageReference ref = storageReference.child(userId + "." + getFileExtension(filePath));
+            StorageReference ref = storageReference.child(userId + "_" +
+                    System.currentTimeMillis() + "." + getFileExtension(filePath));
             ref.putFile(filePath)
                     .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
                         @Override
                         public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                            profileDeclineButton.setVisibility(View.INVISIBLE);
-                            profileAcceptButton.setVisibility(View.INVISIBLE);
                             progressDialog.dismiss();
-
+                            storage.getReferenceFromUrl(userData.getPhotoUrl()).delete();
                             updateAvatarUrlInDatabase(ref.toString());
                             Toast.makeText(getApplicationContext(), "Thành công", Toast.LENGTH_SHORT).show();
                         }
@@ -339,16 +336,10 @@ public class ProfileActivity extends AppCompatActivity {
     private void updateAvatarUrlInDatabase(String ref) {
         userRef = db.collection("users").document(firebaseUser.getUid());
         userRef.update( "photoUrl", ref)
-                .addOnSuccessListener(new OnSuccessListener<Void>() {
-                    @Override
-                    public void onSuccess(Void aVoid) {
-                        Log.d("Profile", "updateAvatarUrlInDatabase successful");
-                    }
-                })
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        Log.d("Profile", "updateAvatarUrlInDatabase fail");
+                        Log.d(TAG, "updateAvatarUrlInDatabase fail");
                     }
                 });
 
@@ -362,7 +353,7 @@ public class ProfileActivity extends AppCompatActivity {
                                 document.getReference().update("photoUrl", ref);
                             }
                         } else {
-                            Log.d("ProfileActivity", "Error getting documents: ", task.getException());
+                            Log.d(TAG, "Error getting documents: ", task.getException());
                         }
                     }
                 });
@@ -374,7 +365,6 @@ public class ProfileActivity extends AppCompatActivity {
             public void onClick(View v) {
                 if (checkValidInput()) {
                     profileName.setEnabled(false);
-                    profileEmail.setEnabled(false);
                     profilePhone.setEnabled(false);
                     updateProfileButton.setEnabled(false);
 
@@ -412,7 +402,7 @@ public class ProfileActivity extends AppCompatActivity {
                             }
                             Toast.makeText(getApplicationContext(), "Cập nhật thành công", Toast.LENGTH_SHORT).show();
                         } else {
-                            Log.d("ProfileActivity", "Error getting documents: ", task.getException());
+                            Log.d(TAG, "Error getting documents: ", task.getException());
                         }
                     }
                 });

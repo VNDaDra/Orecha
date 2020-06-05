@@ -60,23 +60,31 @@
             android:orientation="horizontal"
             android:gravity="center">
 
-            <ImageButton
-                android:id="@+id/profile_decline"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:layout_marginEnd="45dp"
-                android:src="@drawable/clear"
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/profile_avatar_decline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="20dp"
+                android:text="@string/not_beautiful"
                 android:visibility="gone"
-                android:background="?android:selectableItemBackground"
-                android:contentDescription="@string/accept" />
-            <ImageButton
-                android:id="@+id/profile_accept"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
+                android:backgroundTint="@color/red"
+                android:contentDescription="@string/accept"
+                app:icon="@drawable/clear"
+                app:iconGravity="end"
+                style="@style/BigButton"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/profile_avatar_accept"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/beautiful"
                 android:src="@drawable/done"
                 android:visibility="gone"
-                android:background="?android:selectableItemBackground"
-                android:contentDescription="@string/decline" />
+                android:backgroundTint="@color/greenA700"
+                android:contentDescription="@string/decline"
+                app:icon="@drawable/done"
+                app:iconGravity="end"
+                style="@style/BigButton"/>
         </LinearLayout>
 
     </LinearLayout>
@@ -88,14 +96,13 @@
         android:layout_weight="0.4"
         android:gravity="center_vertical"
         android:orientation="vertical"
-        android:paddingHorizontal="30dp">
+        android:paddingHorizontal="60dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingHorizontal="20dp">
+            android:orientation="horizontal">
 
             <ImageView
                 android:layout_width="36dp"
@@ -124,53 +131,52 @@
                 android:layout_weight="0.1"
                 android:background="?android:selectableItemBackground"
                 android:src="@drawable/edit"
-                android:contentDescription="@string/change" />
+                android:contentDescription="@string/change"
+                android:visibility="invisible"/>
         </LinearLayout>
 
         <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingHorizontal="20dp">
+        android:orientation="horizontal">
 
-        <ImageView
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_marginEnd="10dp"
-            android:layout_weight="0.1"
-            android:src="@drawable/person_icon"
-            android:contentDescription="@string/email" />
+            <ImageView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="10dp"
+                android:layout_weight="0.1"
+                android:src="@drawable/person_icon"
+                android:contentDescription="@string/email" />
 
-        <EditText
-            android:id="@+id/profile_name"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:layout_weight="0.8"
-            android:background="@drawable/profile_edit_text"
-            android:maxLines="1"
-            android:maxLength="30"
-            android:textSize="16sp"
-            android:inputType="textPersonName"
-            android:enabled="false"/>
+            <EditText
+                android:id="@+id/profile_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="0.8"
+                android:background="@drawable/profile_edit_text"
+                android:maxLines="1"
+                android:maxLength="30"
+                android:textSize="16sp"
+                android:inputType="textPersonName"
+                android:enabled="false"/>
 
-        <ImageButton
-            android:id="@+id/profile_edit_name"
-            android:layout_width="40dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.1"
-            android:background="?android:selectableItemBackground"
-            android:src="@drawable/edit"
-            android:contentDescription="@string/change" />
-    </LinearLayout>
+            <ImageButton
+                android:id="@+id/profile_edit_name"
+                android:layout_width="40dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.1"
+                android:background="?android:selectableItemBackground"
+                android:src="@drawable/edit"
+                android:contentDescription="@string/change" />
+        </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingHorizontal="20dp">
+            android:orientation="horizontal">
 
             <ImageView
                 android:layout_width="36dp"
