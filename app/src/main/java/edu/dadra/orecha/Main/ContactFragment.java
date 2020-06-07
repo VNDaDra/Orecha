@@ -40,8 +40,6 @@ import edu.dadra.orecha.R;
 
 public class ContactFragment extends Fragment {
 
-    private static final String TAG = "ContactFragment";
-
     private View contactFragmentView;
     private RecyclerView contactRecyclerView;
     private ContactAdapter contactAdapter;
@@ -96,8 +94,7 @@ public class ContactFragment extends Fragment {
 
         searchBar.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
@@ -116,9 +113,7 @@ public class ContactFragment extends Fragment {
             }
 
             @Override
-            public void afterTextChanged(Editable s) {
-
-            }
+            public void afterTextChanged(Editable s) {}
         });
 
         return contactFragmentView;
@@ -143,6 +138,7 @@ public class ContactFragment extends Fragment {
         searchBar = contactFragmentView.findViewById(R.id.contact_search_bar);
         friendRequest = contactFragmentView.findViewById(R.id.list_friend_request);
         unseenFriendRequest = contactFragmentView.findViewById(R.id.contact_unseen_friend_request);
+        searchBar.clearFocus();
     }
 
     private void displayUnseenFriendRequestBadge() {
@@ -181,6 +177,7 @@ public class ContactFragment extends Fragment {
     private void hideKeyboard() {
         final InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
         imm.hideSoftInputFromWindow(getView().getWindowToken(), 0);
+        searchBar.clearFocus();
     }
 
     @Override

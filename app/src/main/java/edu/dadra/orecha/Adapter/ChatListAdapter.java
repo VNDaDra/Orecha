@@ -191,7 +191,7 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Rooms, ChatListAda
                             holder.time.setVisibility(View.INVISIBLE);
                         }
                         else if (type.equals("image")) {
-                            holder.lastMessage.setText(R.string.image_tag); // [Hinh anh]
+                            holder.lastMessage.setText(R.string.image_tag);
                             holder.time.setText(formatDate(date));
                         }
                         else {

@@ -138,9 +138,9 @@ public class ProfileActivity extends AppCompatActivity {
             profilePhone.setTextColor(Color.BLACK);
 
             //Can't change friend information
-            profileEditNameButton.setVisibility(View.VISIBLE);
-            profileEditPhoneButton.setVisibility(View.VISIBLE);
-            updateProfileButton.setVisibility(View.VISIBLE);
+            profileEditNameButton.setVisibility(View.INVISIBLE);
+            profileEditPhoneButton.setVisibility(View.INVISIBLE);
+            updateProfileButton.setVisibility(View.INVISIBLE);
         }
     }
 

@@ -31,8 +31,6 @@ import edu.dadra.orecha.R;
 
 public class ChatListFragment extends Fragment {
 
-    private final String TAG = "ChatListFragment";
-
     private View chatListFragmentView;
     private RecyclerView chatListRecyclerView;
     private ChatListAdapter chatListAdapter;
@@ -54,11 +52,10 @@ public class ChatListFragment extends Fragment {
         chatListFragmentView = inflater.inflate(R.layout.fragment_chatlist, container, false);
 
         init();
-        searchBar = chatListFragmentView.findViewById(R.id.chat_list_search_bar);
 
-        CollectionReference roomIdRef = db.collection("rooms").document(firebaseUser.getUid())
+        CollectionReference userRoomsRef = db.collection("rooms").document(firebaseUser.getUid())
                 .collection("userRooms");
-        Query query = roomIdRef.orderBy("lastMessageTime", Query.Direction.DESCENDING);
+        Query query = userRoomsRef.orderBy("lastMessageTime", Query.Direction.DESCENDING);
         FirestoreRecyclerOptions<Rooms> defaultOptions = new FirestoreRecyclerOptions.Builder<Rooms>()
                 .setQuery(query, Rooms.class).build();
         chatListAdapter = new ChatListAdapter(defaultOptions);
@@ -114,13 +111,25 @@ public class ChatListFragment extends Fragment {
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(Objects.requireNonNull(getActivity()).getApplicationContext(),
                 LinearLayoutManager.VERTICAL, false);
         chatListRecyclerView.setLayoutManager(linearLayoutManager);
+
+        initLayout();
+        initFirebase();
+    }
+
+    private void initFirebase() {
         db = FirebaseFirestore.getInstance();
         firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+    }
+
+    private void initLayout() {
+        searchBar = chatListFragmentView.findViewById(R.id.chat_list_search_bar);
+        searchBar.clearFocus();
     }
 
     private void hideKeyboard() {
         final InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
         imm.hideSoftInputFromWindow(getView().getWindowToken(), 0);
+        searchBar.clearFocus();
     }
 
     @Override

@@ -165,8 +165,6 @@ public class ChatActivity extends AppCompatActivity {
                 } catch (NullPointerException npe) {
                     Log.d(TAG, Objects.requireNonNull(npe.getMessage()));
                 }
-
-
             }
         });
     }
@@ -325,11 +323,17 @@ public class ChatActivity extends AppCompatActivity {
 
         batch.set(friendMessagesRef, messageInfo);
 
-        batch.commit().addOnFailureListener(new OnFailureListener() {
+        batch.commit()
+                .addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception e) {
                 Toast.makeText(getApplicationContext(), "Không thể gửi tin nhắn",
                                 Toast.LENGTH_SHORT).show();
+            }
+        }).addOnSuccessListener(new OnSuccessListener<Void>() {
+            @Override
+            public void onSuccess(Void aVoid) {
+                increaseUnseenCounter(friendId);
             }
         });
     }
