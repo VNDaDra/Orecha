@@ -47,6 +47,8 @@ import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -99,7 +101,12 @@ public class ChatActivity extends AppCompatActivity {
 
         chooseImage();
 
-        clearImage();
+        clearImageButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                clearImage();
+            }
+        });
 
         sendButtonListener();
 
@@ -210,15 +217,10 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     private void clearImage() {
-        clearImageButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                previewImage.setVisibility(View.GONE);
-                messageField.setVisibility(View.VISIBLE);
-                filePath = null;
-                clearImageButton.setVisibility(View.GONE);
-            }
-        });
+        previewImage.setVisibility(View.GONE);
+        clearImageButton.setVisibility(View.GONE);
+        messageField.setVisibility(View.VISIBLE);
+        filePath = null;
     }
 
     @Override
@@ -227,12 +229,29 @@ public class ChatActivity extends AppCompatActivity {
         if(requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK
                 && data != null && data.getData() != null ) {
             filePath = data.getData();
-            messageField.setText("");
-            messageField.setVisibility(View.INVISIBLE);
-            previewImage.setVisibility(View.VISIBLE);
-            clearImageButton.setVisibility(View.VISIBLE);
-            previewImage.setImageURI(filePath);
+            if (getImageSize() <= 5120) {
+                messageField.setText("");
+                messageField.setVisibility(View.INVISIBLE);
+                previewImage.setVisibility(View.VISIBLE);
+                clearImageButton.setVisibility(View.VISIBLE);
+                previewImage.setImageURI(filePath);
+            } else {
+                clearImage();
+                Toast.makeText(getApplicationContext(), "Hãy chọn hình nhỏ hơn 5MB", Toast.LENGTH_SHORT).show();
+            }
         }
+    }
+
+    private int getImageSize() {
+        InputStream fileInputStream;
+        int imageSize = 0;
+        try {
+            fileInputStream = getApplicationContext().getContentResolver().openInputStream(filePath);
+            imageSize = fileInputStream.available() / 1024;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return imageSize;
     }
 
     private String getFileExtension(Uri uri) {

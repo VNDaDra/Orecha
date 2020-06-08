@@ -46,6 +46,9 @@ import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
+import java.io.IOException;
+import java.io.InputStream;
+
 import edu.dadra.orecha.Model.Users;
 
 public class ProfileActivity extends AppCompatActivity {
@@ -251,14 +254,29 @@ public class ProfileActivity extends AppCompatActivity {
         if(requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK
                 && data != null && data.getData() != null ) {
             filePath = data.getData();
-
-            Glide.with(getApplicationContext())
-                    .load(filePath)
-                    .into(profileAvatar);
-            avatarDeclineButton.setVisibility(View.VISIBLE);
-            avatarAcceptButton.setVisibility(View.VISIBLE);
+            if (getImageSize() <= 5120) {
+                Glide.with(getApplicationContext())
+                        .load(filePath)
+                        .into(profileAvatar);
+                avatarDeclineButton.setVisibility(View.VISIBLE);
+                avatarAcceptButton.setVisibility(View.VISIBLE);
+            } else {
+                Toast.makeText(getApplicationContext(), "Hãy chọn hình nhỏ hơn 5MB", Toast.LENGTH_SHORT).show();
+            }
 
         }
+    }
+
+    private int getImageSize() {
+        InputStream fileInputStream;
+        int imageSize = 0;
+        try {
+            fileInputStream = getApplicationContext().getContentResolver().openInputStream(filePath);
+            imageSize = fileInputStream.available() / 1024;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return imageSize;
     }
 
     private void confirmChangeAvatar() {
