@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.MenuItem;
@@ -25,6 +26,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
 
 import com.bumptech.glide.Glide;
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -64,10 +66,10 @@ public class ProfileActivity extends AppCompatActivity {
 
     private LinearLayout topLayout, bottomLayout;
     private ImageView profileAvatar;
-    private TextView profileTitleName;
+    private TextView profileTitleName, verifyStatus;
     private EditText profileEmail, profilePhone, profileName;
-    private Button updateProfileButton, avatarDeclineButton, avatarAcceptButton;
-    private ImageButton profileEditNameButton,  profileEditPhoneButton;
+    private Button updateProfileButton, avatarDeclineButton, avatarAcceptButton, sendVerifyEmailButton;
+    private ImageButton editNameButton,  editPhoneButton, refresh;
 
     private String userId;
     private Users userData;
@@ -106,7 +108,9 @@ public class ProfileActivity extends AppCompatActivity {
 
     private void initFirebase() {
         db = FirebaseFirestore.getInstance();
-        firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+        FirebaseAuth mAuth = FirebaseAuth.getInstance();
+        mAuth.setLanguageCode("vi");
+        firebaseUser = mAuth.getCurrentUser();
         storage = FirebaseStorage.getInstance();
         storageReference = storage.getReference("avatars");
     }
@@ -121,12 +125,16 @@ public class ProfileActivity extends AppCompatActivity {
         avatarDeclineButton = findViewById(R.id.profile_avatar_decline);
         avatarAcceptButton = findViewById(R.id.profile_avatar_accept);
 
+        verifyStatus = findViewById(R.id.profile_verify_status);
+        sendVerifyEmailButton = findViewById(R.id.profile_send_verify);
+        refresh = findViewById(R.id.profile_refresh_verify);
+
         profileEmail = findViewById(R.id.profile_email);
         profileName = findViewById(R.id.profile_name);
         profilePhone = findViewById(R.id.profile_phone);
 
-        profileEditNameButton = findViewById(R.id.profile_edit_name);
-        profileEditPhoneButton = findViewById(R.id.profile_edit_phone);
+        editNameButton = findViewById(R.id.profile_edit_name);
+        editPhoneButton = findViewById(R.id.profile_edit_phone);
 
         updateProfileButton = findViewById(R.id.profile_update);
 
@@ -134,17 +142,46 @@ public class ProfileActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayShowTitleEnabled(false);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
+        if (!firebaseUser.isEmailVerified()) {
+            displaySendVerifyEmailButton();
+        } else {
+            sendVerifyEmailButton.setVisibility(View.GONE);
+            verifyStatus.setText(R.string.verified_email);
+            verifyStatus.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.greenA700));
+        }
+
         //Friend view
         if (!userId.equals(firebaseUser.getUid())) {
             profileEmail.setTextColor(Color.BLACK);
             profileName.setTextColor(Color.BLACK);
             profilePhone.setTextColor(Color.BLACK);
 
-            //Can't change friend information
-            profileEditNameButton.setVisibility(View.INVISIBLE);
-            profileEditPhoneButton.setVisibility(View.INVISIBLE);
+            verifyStatus.setVisibility(View.GONE);
+            sendVerifyEmailButton.setVisibility(View.GONE);
+
+            editNameButton.setVisibility(View.INVISIBLE);
+            editPhoneButton.setVisibility(View.INVISIBLE);
             updateProfileButton.setVisibility(View.INVISIBLE);
         }
+    }
+
+    private void displaySendVerifyEmailButton() {
+        sendVerifyEmailButton.setVisibility(View.VISIBLE);
+        sendVerifyEmailButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Toast.makeText(getApplicationContext(), "Kiểm tra email để xác thực", Toast.LENGTH_LONG).show();
+                sendVerifyEmail();
+                countdown();
+                refresh.setVisibility(View.VISIBLE);
+                refresh.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        refreshVerifyStatus();
+                    }
+                });
+            }
+        });
     }
 
     private void getUserData(String userId) {
@@ -179,7 +216,7 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void setFieldEditable() {
-        profileEditNameButton.setOnClickListener(new View.OnClickListener() {
+        editNameButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 profileName.setEnabled(true);
@@ -187,7 +224,7 @@ public class ProfileActivity extends AppCompatActivity {
             }
         });
 
-        profileEditPhoneButton.setOnClickListener(new View.OnClickListener() {
+        editPhoneButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 profilePhone.setEnabled(true);
@@ -457,6 +494,49 @@ public class ProfileActivity extends AppCompatActivity {
         if (view != null) {
             InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
             imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
+    }
+
+    private void sendVerifyEmail() {
+        firebaseUser.sendEmailVerification()
+                .addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        if (task.isSuccessful()) {
+                            Toast.makeText(getApplicationContext(), "Kiểm tra email của bạn để tiến hành xác thực",
+                                    Toast.LENGTH_LONG).show();
+                        } else {
+                            Toast.makeText(getApplicationContext(), "Lỗi! Vui lòng thử lại sau",
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+    }
+
+    private void countdown() {
+        sendVerifyEmailButton.setEnabled(false);
+        new CountDownTimer(60000, 1000) {
+            public void onTick(long millisUntilFinished) {
+                sendVerifyEmailButton.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.black));
+                sendVerifyEmailButton.setText("" + (millisUntilFinished / 1000));
+            }
+
+            public void onFinish() {
+                refreshVerifyStatus();
+                sendVerifyEmailButton.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.colorAccent));
+                sendVerifyEmailButton.setText("Gửi lại");
+                sendVerifyEmailButton.setEnabled(true);
+            }
+        }.start();
+    }
+
+    private void refreshVerifyStatus() {
+        firebaseUser.reload();
+        if (firebaseUser.isEmailVerified()) {
+            refresh.setVisibility(View.GONE);
+            sendVerifyEmailButton.setVisibility(View.GONE);
+            verifyStatus.setText(R.string.verified_email);
+            verifyStatus.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.greenA700));
         }
     }
 

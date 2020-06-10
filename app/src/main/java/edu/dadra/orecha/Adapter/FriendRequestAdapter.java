@@ -74,6 +74,7 @@ public class FriendRequestAdapter extends FirestoreRecyclerAdapter <FriendReques
         holder.acceptButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                holder.acceptButton.setEnabled(false);
                 updateContact(friendRequest);
             }
         });

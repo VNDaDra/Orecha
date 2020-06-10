@@ -46,4 +46,8 @@
     <string name="download">Tải về</string>
     <string name="not_beautiful">Chưa đẹp</string>
     <string name="beautiful">Đẹp rồi</string>
+    <string name="refresh">Làm mới</string>
+    <string name="verified_email">Email đã được xác thực</string>
+    <string name="unverified_email">Email chưa được xác thực</string>
+    <string name="send_now">Gửi ngay</string>
 </resources>
