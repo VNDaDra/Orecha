@@ -1,6 +1,5 @@
 package edu.dadra.orecha;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -20,10 +19,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 import com.google.android.material.textfield.TextInputLayout;
-import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
@@ -32,7 +28,7 @@ public class LoginActivity extends AppCompatActivity {
     private static final String TAG = "LoginActivity";
 
     private LinearLayout loginLayout;
-    private Button loginButton;
+    private Button loginButton, forgotPasswordButton;
     private TextView statusLogin, hintLoginText;
     private String authEmail, authPassword;
     private TextInputLayout emailField, passwordField;
@@ -60,12 +56,9 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
 
-        loginLayout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                hideKeyboard();
-            }
-        });
+        forgotPasswordButton.setOnClickListener(v -> moveToForgotPasswordActivity());
+
+        loginLayout.setOnClickListener(v -> hideKeyboard());
 
         mAuth = FirebaseAuth.getInstance();
     }
@@ -75,6 +68,7 @@ public class LoginActivity extends AppCompatActivity {
         emailField = findViewById(R.id.login_email);
         passwordField = findViewById(R.id.login_password);
         loginButton = findViewById(R.id.login_button);
+        forgotPasswordButton = findViewById(R.id.login_forgot_password);
         statusLogin = findViewById(R.id.login_status);
         hintLoginText = findViewById(R.id.login_hint);
     }
@@ -86,7 +80,7 @@ public class LoginActivity extends AppCompatActivity {
 
         ClickableSpan registerClickableSpan = new ClickableSpan() {
             @Override
-            public void onClick(View view) {
+            public void onClick(@NonNull View view) {
                 moveToRegisterActivity();
             }
         };
@@ -109,21 +103,17 @@ public class LoginActivity extends AppCompatActivity {
         progressDialog.show();
 
         mAuth.signInWithEmailAndPassword(email, password)
-                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-                    @SuppressLint("SetTextI18n")
-                    @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
-                        if (task.isSuccessful()) {
-                            Log.d(TAG, "loginWithEmail: success");
-                            moveToMainActivity();
-                        } else {
-                            Log.d(TAG, "loginWithEmail: fail");
-                            Toast.makeText(LoginActivity.this, "Không thể xác minh người dùng",
-                                    Toast.LENGTH_SHORT).show();
-                            statusLogin.setText("Đăng nhập thất bại");
-                        }
-                        progressDialog.dismiss();
+                .addOnCompleteListener(this, task -> {
+                    if (task.isSuccessful()) {
+                        Log.d(TAG, "loginWithEmail: success");
+                        moveToMainActivity();
+                    } else {
+                        Log.d(TAG, "loginWithEmail: fail");
+                        Toast.makeText(LoginActivity.this, "Không thể xác minh người dùng",
+                                Toast.LENGTH_SHORT).show();
+                        statusLogin.setText("Đăng nhập thất bại");
                     }
+                    progressDialog.dismiss();
                 });
     }
 
@@ -145,6 +135,12 @@ public class LoginActivity extends AppCompatActivity {
             passwordField.setError(null);
         }
         return valid;
+    }
+
+    private void moveToForgotPasswordActivity() {
+        Intent ForgotPasswordIntent = new Intent(getApplicationContext(), ForgotPasswordActivity.class);
+        ForgotPasswordIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(ForgotPasswordIntent);
     }
 
     private void moveToRegisterActivity() {

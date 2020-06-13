@@ -50,4 +50,8 @@
     <string name="verified_email">Email đã được xác thực</string>
     <string name="unverified_email">Email chưa được xác thực</string>
     <string name="send_now">Gửi ngay</string>
+    <string name="forgot_password">Quên mật khẩu</string>
+    <string name="recover">Khôi phục</string>
+    <string name="recover_password_hint">Kiểm tra email để đặt lại mật khẩu</string>
+    <string name="recover_password">Khôi phục mật khẩu</string>
 </resources>
