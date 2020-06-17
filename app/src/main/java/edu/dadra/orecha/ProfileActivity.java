@@ -273,9 +273,13 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void viewAvatar() {
-        Intent fullScreenImageIntent = new Intent(getApplicationContext(), FullScreenImageActivity.class);
-        fullScreenImageIntent.putExtra("imageUri", userData.getPhotoUrl());
-        startActivity(fullScreenImageIntent);
+        if (!userData.getPhotoUrl().equals("") && userData.getPhotoUrl() != null) {
+            Intent fullScreenImageIntent = new Intent(getApplicationContext(), FullScreenImageActivity.class);
+            fullScreenImageIntent.putExtra("imageUri", userData.getPhotoUrl());
+            startActivity(fullScreenImageIntent);
+        } else {
+            Toast.makeText(getApplicationContext(), "Đây là ảnh mặc định", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void chooseImage() {
@@ -358,8 +362,10 @@ public class ProfileActivity extends AppCompatActivity {
                     .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
                         @Override
                         public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                            if (!userData.getPhotoUrl().equals("")) {
+                                storage.getReferenceFromUrl(userData.getPhotoUrl()).delete();
+                            }
                             progressDialog.dismiss();
-                            storage.getReferenceFromUrl(userData.getPhotoUrl()).delete();
                             updateAvatarUrlInDatabase(ref.toString());
                             Toast.makeText(getApplicationContext(), "Thành công", Toast.LENGTH_SHORT).show();
                         }

@@ -193,6 +193,9 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Rooms, ChatListAda
                         else if (type.equals("image")) {
                             holder.lastMessage.setText(R.string.image_tag);
                             holder.time.setText(formatDate(date));
+                        } else if (type.equals("file")) {
+                            holder.lastMessage.setText("[File]");
+                            holder.time.setText(formatDate(date));
                         }
                         else {
                             holder.lastMessage.setText(lastMessage);

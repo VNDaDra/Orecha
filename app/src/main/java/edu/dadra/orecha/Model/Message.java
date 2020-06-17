@@ -11,6 +11,7 @@ public class Message {
     private String message;
     private Timestamp time;
     private String type;
+    private FileMessage file;
 
     public Message() {
     }
@@ -22,6 +23,16 @@ public class Message {
         this.message = message;
         this.time = time;
         this.type = type;
+    }
+
+    public Message(String id, String roomId, String senderId, String message, Timestamp time, String type, FileMessage file) {
+        this.id = id;
+        this.roomId = roomId;
+        this.senderId = senderId;
+        this.message = message;
+        this.time = time;
+        this.type = type;
+        this.file = file;
     }
 
     public String getSenderId() {
@@ -70,5 +81,13 @@ public class Message {
 
     public void setRoomId(String roomId) {
         this.roomId = roomId;
+    }
+
+    public FileMessage getFile() {
+        return file;
+    }
+
+    public void setFile(FileMessage file) {
+        this.file = file;
     }
 }

@@ -1,24 +1,19 @@
 package edu.dadra.orecha;
 
-import android.Manifest;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Environment;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.core.app.ActivityCompat;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.Priority;
 import com.bumptech.glide.request.RequestOptions;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
@@ -88,27 +83,14 @@ public class FullScreenImageActivity extends AppCompatActivity {
     }
 
     private void downloadImage() {
-        ActivityCompat.requestPermissions(FullScreenImageActivity.this,
-                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},1);
-
-        File path = new File("/storage/emulated/0/Download", "orecha");
+        File path = new File(Environment.getExternalStorageDirectory() + "/Orecha/");
         if(!path.exists()) {
             path.mkdirs();
         }
         File localFile = new File(path, storageRef.getName());
 
         storageRef.getFile(localFile)
-                .addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
-                    @Override
-                    public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
-                        Toast.makeText(getApplicationContext(), "Đã tải xuống", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Toast.makeText(getApplicationContext(), "Lỗi", Toast.LENGTH_SHORT).show();
-                    }
-                });
+                .addOnSuccessListener(taskSnapshot -> Toast.makeText(getApplicationContext(), "Đã tải xuống", Toast.LENGTH_SHORT).show())
+                .addOnFailureListener(e -> Toast.makeText(getApplicationContext(), "Lỗi", Toast.LENGTH_SHORT).show());
     }
 }

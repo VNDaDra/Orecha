@@ -8,7 +8,7 @@
 
     <string name="retype_password">Nhập lại mật khẩu</string>
     <string name="register_button">Đăng Kí</string>
-    <string name="hint_login">Đã có tài khoản</string>
+    <string name="hint_login" translatable="false">Đã có tài khoản</string>
     <string name="loading">Đợi một chút nhé!</string>
     <string name="logout">Đăng xuất</string>
     <string name="input_message_hint">Tin nhắn</string>
@@ -38,6 +38,7 @@
     <string name="make_friend">Kết bạn</string>
     <string name="profile">Trang cá nhân</string>
     <string name="image_tag">[Hình ảnh]</string>
+    <string name="file_tag">[File]</string>
     <string name="change_password">Đổi mật khẩu</string>
     <string name="old_password">Mật khẩu cũ</string>
     <string name="new_password">Mật khẩu mới</string>
@@ -54,4 +55,7 @@
     <string name="recover">Khôi phục</string>
     <string name="recover_password_hint">Kiểm tra email để đặt lại mật khẩu</string>
     <string name="recover_password">Khôi phục mật khẩu</string>
+    <string name="add_image">Thêm ảnh</string>
+    <string name="add_file">Thêm file</string>
+    <string name="file_size">%1$d KB</string>
 </resources>

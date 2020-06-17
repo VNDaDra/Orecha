@@ -4,10 +4,11 @@ import android.annotation.SuppressLint;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.MimeTypeMap;
@@ -18,43 +19,34 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.WriteBatch;
 import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
-import com.google.firebase.storage.UploadTask;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
 import edu.dadra.orecha.Adapter.ChatAdapter;
+import edu.dadra.orecha.Model.FileMessage;
 import edu.dadra.orecha.Model.Friends;
 import edu.dadra.orecha.Model.Message;
 
@@ -62,38 +54,36 @@ public class ChatActivity extends AppCompatActivity {
 
     private static final String TAG = "ChatActivity";
     private final int PICK_IMAGE_REQUEST = 1;
+    private final int PICK_FILE_REQUEST = 2;
 
     private FirebaseUser firebaseUser;
     private FirebaseFirestore db;
     private DocumentReference myMessagesRef, friendMessagesRef;
     private FirebaseStorage storage;
-    private StorageReference storageReference;
+    private StorageReference imageReference, fileReference;
 
     private RecyclerView chatRecyclerView;
     private ChatAdapter chatAdapter;
 
     private EditText messageField;
-    private ImageButton sendButton, chooseImageButton, clearImageButton;
+    private ImageButton sendButton, chooseImageButton, chooseFileButton, clearImageButton, clearFileButton;
     private ImageView friendAvatar, previewImage;
-    private TextView friendName;
-    private ProgressBar sendImageProgress;
+    private TextView friendName, fileName, fileSize;
+    private ProgressBar sendImageProgress, sendFileProgress;
+    private CardView fileCardView;
 
     private String roomId, friendId;
     private Timestamp lastMessageTime;
-    private Uri filePath = null;
+    private Uri imagePath, filePath;
+
+    private FileMessage currentFile;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
 
-        initLayout();
-
-        getDataFromPreviousActivity();
-
-        initFirebase();
-
-        initRecyclerView();
+        init();
 
         showFriendInformation();
 
@@ -101,16 +91,24 @@ public class ChatActivity extends AppCompatActivity {
 
         chooseImage();
 
-        clearImageButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                clearImage();
-            }
-        });
+        chooseFile();
+
+        clearImageButton.setOnClickListener(v -> clearImage());
+
+        clearFileButton.setOnClickListener(v -> clearFile());
 
         sendButtonListener();
 
         moveToProfileActivity();
+    }
+
+    private void init() {
+        initLayout();
+        initFirebase();
+        initRecyclerView();
+        getDataFromPreviousActivity();
+        imagePath = null;
+        filePath = null;
     }
 
     private void initLayout() {
@@ -118,11 +116,18 @@ public class ChatActivity extends AppCompatActivity {
         messageField = findViewById(R.id.chat_message);
 
         previewImage =findViewById(R.id.chat_preview_image);
-        chooseImageButton = findViewById(R.id.chat_choose_image_iButton);
         clearImageButton = findViewById(R.id.chat_clear_image);
-        sendImageProgress = findViewById(R.id.chat_send_progress);
+        sendImageProgress = findViewById(R.id.chat_send_image_progress);
+        fileCardView = findViewById(R.id.chat_file_card_view);
+        fileName = findViewById(R.id.chat_file_name);
+        fileSize = findViewById(R.id.chat_file_size);
+        sendFileProgress = findViewById(R.id.chat_send_file_progress);
+        clearFileButton = findViewById(R.id.chat_clear_file);
 
         sendButton = findViewById(R.id.chat_send_iButton);
+        chooseImageButton = findViewById(R.id.chat_choose_image_iButton);
+        chooseFileButton = findViewById(R.id.chat_choose_file);
+
         friendAvatar = findViewById(R.id.chat_toolbar_icon);
         friendName = findViewById(R.id.chat_toolbar_title);
 
@@ -141,7 +146,8 @@ public class ChatActivity extends AppCompatActivity {
         db = FirebaseFirestore.getInstance();
         firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
         storage = FirebaseStorage.getInstance();
-        storageReference = storage.getReference("image_message").child(firebaseUser.getUid());
+        imageReference = storage.getReference("image_message").child(firebaseUser.getUid());
+        fileReference = storage.getReference("file_message").child(firebaseUser.getUid());
     }
 
     private void initRecyclerView () {
@@ -153,25 +159,22 @@ public class ChatActivity extends AppCompatActivity {
 
     private void showFriendInformation() {
         DocumentReference friendRef = db.collection("users").document(friendId);
-        friendRef.addSnapshotListener(new EventListener<DocumentSnapshot>() {
-            @Override
-            public void onEvent(@Nullable DocumentSnapshot documentSnapshot, @Nullable FirebaseFirestoreException e) {
-                try {
-                    Friends friend = documentSnapshot.toObject(Friends.class);
-                    friendName.setText(friend.getDisplayName());
+        friendRef.addSnapshotListener((documentSnapshot, e) -> {
+            try {
+                Friends friend = documentSnapshot.toObject(Friends.class);
+                friendName.setText(friend.getDisplayName());
 
-                    if (!friend.getPhotoUrl().equals("")) {
-                        Glide.with(getApplicationContext())
-                                .load(storage.getReferenceFromUrl(friend.getPhotoUrl()))
-                                .placeholder(R.drawable.orange)
-                                .into(friendAvatar);
-                    } else Glide.with(getApplicationContext())
-                            .load(R.drawable.orange)
+                if (!friend.getPhotoUrl().equals("")) {
+                    Glide.with(getApplicationContext())
+                            .load(storage.getReferenceFromUrl(friend.getPhotoUrl()))
                             .placeholder(R.drawable.orange)
                             .into(friendAvatar);
-                } catch (NullPointerException npe) {
-                    Log.d(TAG, Objects.requireNonNull(npe.getMessage()));
-                }
+                } else Glide.with(getApplicationContext())
+                        .load(R.drawable.orange)
+                        .placeholder(R.drawable.orange)
+                        .into(friendAvatar);
+            } catch (NullPointerException npe) {
+                Log.d(TAG, Objects.requireNonNull(npe.getMessage()));
             }
         });
     }
@@ -195,30 +198,39 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
         chatRecyclerView.setAdapter(chatAdapter);
-        chatRecyclerView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                hideKeyboard();
-                return false;
-            }
+        chatRecyclerView.setOnTouchListener((v, event) -> {
+            hideKeyboard();
+            return false;
         });
     }
 
     private void chooseImage() {
-        chooseImageButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent();
-                intent.setType("image/*");
-                intent.setAction(Intent.ACTION_GET_CONTENT);
-                startActivityForResult(Intent.createChooser(intent, "Chọn ảnh"), PICK_IMAGE_REQUEST);
-            }
+        chooseImageButton.setOnClickListener(v -> {
+            Intent intent = new Intent();
+            intent.setType("image/*");
+            intent.setAction(Intent.ACTION_GET_CONTENT);
+            startActivityForResult(Intent.createChooser(intent, "Chọn ảnh"), PICK_IMAGE_REQUEST);
+        });
+    }
+
+    private void chooseFile() {
+        chooseFileButton.setOnClickListener(v -> {
+            Intent intent = new Intent();
+            intent.setType("*/*");
+            intent.setAction(Intent.ACTION_GET_CONTENT);
+            startActivityForResult(Intent.createChooser(intent, "Chọn tập tin"), PICK_FILE_REQUEST);
         });
     }
 
     private void clearImage() {
         previewImage.setVisibility(View.GONE);
         clearImageButton.setVisibility(View.GONE);
+        messageField.setVisibility(View.VISIBLE);
+        imagePath = null;
+    }
+
+    private void clearFile() {
+        fileCardView.setVisibility(View.GONE);
         messageField.setVisibility(View.VISIBLE);
         filePath = null;
     }
@@ -228,30 +240,59 @@ public class ChatActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK
                 && data != null && data.getData() != null ) {
-            filePath = data.getData();
-            if (getImageSize() <= 5120) {
+            imagePath = data.getData();
+            if (getFileSizeInKB(imagePath) <= 5120) {
                 messageField.setText("");
                 messageField.setVisibility(View.INVISIBLE);
                 previewImage.setVisibility(View.VISIBLE);
                 clearImageButton.setVisibility(View.VISIBLE);
-                previewImage.setImageURI(filePath);
+                previewImage.setImageURI(imagePath);
             } else {
                 clearImage();
-                Toast.makeText(getApplicationContext(), "Hãy chọn hình nhỏ hơn 5MB", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), "Hãy chọn hình nhỏ hơn 5MB", Toast.LENGTH_LONG).show();
+            }
+        }
+        else if(requestCode == PICK_FILE_REQUEST && resultCode == RESULT_OK
+                && data != null && data.getData() != null) {
+            filePath = data.getData();
+            if(getFileSizeInKB(filePath) <= 51200) {
+                messageField.setText("");
+                messageField.setVisibility(View.INVISIBLE);
+
+                currentFile = new FileMessage(getFileName(filePath), getFileExtension(filePath), getFileSizeInKB(filePath));
+                fileCardView.setVisibility(View.VISIBLE);
+
+                fileName.setText(currentFile.getName());
+                fileSize.setText(String.valueOf(currentFile.getSizeInKB()));
+            } else {
+                clearFile();
+                Toast.makeText(getApplicationContext(), "Hãy chọn tập tin nhỏ hơn 50MB", Toast.LENGTH_LONG).show();
             }
         }
     }
 
-    private int getImageSize() {
-        InputStream fileInputStream;
-        int imageSize = 0;
-        try {
-            fileInputStream = getApplicationContext().getContentResolver().openInputStream(filePath);
-            imageSize = fileInputStream.available() / 1024;
-        } catch (IOException e) {
-            e.printStackTrace();
+    private long getFileSizeInKB(Uri path) {
+        Cursor returnCursor = getContentResolver().query(path,
+                null, null, null, null);
+        int sizeIndex = returnCursor.getColumnIndex(OpenableColumns.SIZE);
+        returnCursor.moveToFirst();
+        return  returnCursor.getLong(sizeIndex) / 1024;
+    }
+
+    private String getFileName(Uri path) {
+        String returnString, fullString;
+        Cursor returnCursor = getContentResolver().query(path,
+                null, null, null, null);
+        int nameIndex = returnCursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+        returnCursor.moveToFirst();
+        fullString = returnCursor.getString(nameIndex);
+        if (fullString.length() > 20) {
+            returnString = fullString.substring(0, 7) + "..." +
+                    fullString.substring(fullString.length() - 10);
+        } else {
+            returnString = fullString;
         }
-        return imageSize;
+        return returnString;
     }
 
     private String getFileExtension(Uri uri) {
@@ -261,61 +302,67 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     private void sendButtonListener() {
-        sendButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                String currentMessage = messageField.getText().toString().trim();
-                if (!currentMessage.equals("")) {
-                    lastMessageTime = new Timestamp(new Date());
-                    sendMessage(currentMessage);
-                    setLastMessageTime();
-                }
-
-                if (currentMessage.equals("") && filePath != null) {
-                    clearImageButton.setVisibility(View.GONE);
-                    sendImageProgress.setVisibility(View.VISIBLE);
-
-                    lastMessageTime = new Timestamp(new Date());
-                    uploadImageToStorage();
-                    setLastMessageTime();
-                }
-                messageField.setVisibility(View.VISIBLE);
-                messageField.setText("");
-                filePath = null;
-
+        sendButton.setOnClickListener(view -> {
+            String currentMessage = messageField.getText().toString().trim();
+            if (!currentMessage.equals("")) {
+                lastMessageTime = new Timestamp(new Date());
+                sendMessage(currentMessage);
             }
+
+            if (currentMessage.equals("") && imagePath != null) {
+                clearImageButton.setVisibility(View.GONE);
+                sendImageProgress.setVisibility(View.VISIBLE);
+
+                lastMessageTime = new Timestamp(new Date());
+                uploadImageToStorage();
+            }
+
+            if (currentMessage.equals("") && filePath != null) {
+                clearFileButton.setVisibility(View.GONE);
+                sendFileProgress.setVisibility(View.VISIBLE);
+
+                lastMessageTime = new Timestamp(new Date());
+                uploadFileToStorage();
+            }
+
+            messageField.setVisibility(View.VISIBLE);
+            messageField.setText("");
+            imagePath = null;
+            filePath = null;
+
         });
     }
 
-    private void uploadImageToStorage() {
-        if(filePath != null) {
+    private void sendMessage(String message) {
+        WriteBatch batch = db.batch();
+        myMessagesRef = db.collection("messages").document(firebaseUser.getUid())
+                .collection("messagesWith").document(roomId).collection("messagesOfThisRoom")
+                .document();
+        String messageId = myMessagesRef.getId();
+        Map<String, Object> messageInfo = new HashMap<>();
 
-            StorageReference ref = storageReference.child(roomId)
-                    .child(firebaseUser.getUid() + "_" + System.currentTimeMillis() + "." + getFileExtension(filePath));
-            ref.putFile(filePath)
-                    .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
-                        @Override
-                        public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                            sendImage(ref.toString());
-                            sendImageProgress.setVisibility(View.GONE);
-                            previewImage.setVisibility(View.GONE);
-                        }
-                    })
-                    .addOnFailureListener(new OnFailureListener() {
-                        @Override
-                        public void onFailure(@NonNull Exception e) {
-                            Toast.makeText(getApplicationContext(), "Lỗi "+e.getMessage(), Toast.LENGTH_SHORT).show();
-                        }
-                    })
-                    .addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
-                        @Override
-                        public void onProgress(UploadTask.TaskSnapshot taskSnapshot) {
-                            double progress = (100.0*taskSnapshot.getBytesTransferred()/taskSnapshot
-                                    .getTotalByteCount());
-                            sendImageProgress.setProgress( (int) progress);
-                        }
-                    });
-        }
+        messageInfo.put("id", messageId);
+        messageInfo.put("roomId", roomId);
+        messageInfo.put("senderId", firebaseUser.getUid());
+        messageInfo.put("message", message);
+        messageInfo.put("time", new Timestamp(new Date() ));
+        messageInfo.put("type", "text");
+
+        batch.set(myMessagesRef, messageInfo);
+
+        friendMessagesRef = db.collection("messages").document(friendId)
+                .collection("messagesWith").document(roomId).collection("messagesOfThisRoom")
+                .document(messageId);
+
+        batch.set(friendMessagesRef, messageInfo);
+
+        batch.commit()
+                .addOnFailureListener(e -> Toast.makeText(getApplicationContext(),
+                        "Không thể gửi tin nhắn", Toast.LENGTH_SHORT).show())
+                .addOnSuccessListener(aVoid -> {
+                    setLastMessageTime();
+                    increaseUnseenMessage(friendId);
+                });
     }
 
     private void sendImage(String imageRef) {
@@ -343,18 +390,93 @@ public class ChatActivity extends AppCompatActivity {
         batch.set(friendMessagesRef, messageInfo);
 
         batch.commit()
-                .addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception e) {
-                Toast.makeText(getApplicationContext(), "Không thể gửi tin nhắn",
-                                Toast.LENGTH_SHORT).show();
-            }
-        }).addOnSuccessListener(new OnSuccessListener<Void>() {
-            @Override
-            public void onSuccess(Void aVoid) {
-                increaseUnseenCounter(friendId);
-            }
-        });
+                .addOnFailureListener(e -> Toast.makeText(getApplicationContext(),
+                        "Không thể gửi tin nhắn", Toast.LENGTH_SHORT).show())
+                .addOnSuccessListener(aVoid -> {
+                    setLastMessageTime();
+                    increaseUnseenMessage(friendId);
+                });
+    }
+
+    private void uploadImageToStorage() {
+        if(imagePath != null) {
+
+            StorageReference ref = imageReference.child(roomId)
+                    .child(firebaseUser.getUid() + "_" + System.currentTimeMillis() + "." + getFileExtension(imagePath));
+            ref.putFile(imagePath)
+                    .addOnSuccessListener(taskSnapshot -> {
+                        sendImage(ref.toString());
+                        sendImageProgress.setVisibility(View.GONE);
+                        previewImage.setVisibility(View.GONE);
+                    })
+                    .addOnFailureListener(e -> Toast.makeText(getApplicationContext(),
+                            "Lỗi "+e.getMessage(), Toast.LENGTH_SHORT).show())
+                    .addOnProgressListener(taskSnapshot -> {
+                        double progress = (100.0*taskSnapshot.getBytesTransferred()/taskSnapshot
+                                .getTotalByteCount());
+                        sendImageProgress.setProgress( (int) progress);
+                    });
+        }
+    }
+
+    private void sendFile(String fileRef) {
+        WriteBatch batch = db.batch();
+        myMessagesRef = db.collection("messages").document(firebaseUser.getUid())
+                .collection("messagesWith").document(roomId).collection("messagesOfThisRoom")
+                .document();
+
+        String messageId = myMessagesRef.getId();
+        Map<String, Object> messageInfo = new HashMap<>();
+
+        messageInfo.put("id", messageId);
+        messageInfo.put("roomId", roomId);
+        messageInfo.put("senderId", firebaseUser.getUid());
+        messageInfo.put("message", fileRef);
+        messageInfo.put("time", new Timestamp(new Date() ));
+        messageInfo.put("type", "file");
+
+        Map<String, Object> fileInfo = new HashMap<>();
+        fileInfo.put("name", currentFile.getName());
+        fileInfo.put("extension", currentFile.getExtension().toUpperCase());
+        fileInfo.put("sizeInKB", currentFile.getSizeInKB());
+
+        messageInfo.put("file", fileInfo);
+
+        batch.set(myMessagesRef, messageInfo);
+
+        friendMessagesRef = db.collection("messages").document(friendId)
+                .collection("messagesWith").document(roomId).collection("messagesOfThisRoom")
+                .document(messageId);
+
+        batch.set(friendMessagesRef, messageInfo);
+
+        batch.commit()
+                .addOnFailureListener(e -> Toast.makeText(getApplicationContext(),
+                        "Không thể gửi tin nhắn", Toast.LENGTH_SHORT).show())
+                .addOnSuccessListener(aVoid -> {
+                    setLastMessageTime();
+                    increaseUnseenMessage(friendId);
+                });
+    }
+
+    private void uploadFileToStorage() {
+        if(filePath != null) {
+
+            StorageReference ref = fileReference.child(roomId)
+                    .child("file_" + System.currentTimeMillis() + "." + currentFile.getExtension());
+            ref.putFile(filePath)
+                    .addOnSuccessListener(taskSnapshot -> {
+                        sendFile(ref.toString());
+                        clearFile();
+                    })
+                    .addOnFailureListener(e -> Toast.makeText(getApplicationContext(),
+                            "Lỗi "+e.getMessage(), Toast.LENGTH_SHORT).show())
+                    .addOnProgressListener(taskSnapshot -> {
+                        double progress = (100.0*taskSnapshot.getBytesTransferred()/taskSnapshot
+                                .getTotalByteCount());
+                        sendFileProgress.setProgress( (int) progress);
+                    });
+        }
     }
 
     private void setLastMessageTime() {
@@ -368,45 +490,7 @@ public class ChatActivity extends AppCompatActivity {
         }
     }
 
-    private void sendMessage(String message) {
-        WriteBatch batch = db.batch();
-        myMessagesRef = db.collection("messages").document(firebaseUser.getUid())
-                .collection("messagesWith").document(roomId).collection("messagesOfThisRoom")
-                .document();
-        String messageId = myMessagesRef.getId();
-        Map<String, Object> messageInfo = new HashMap<>();
-
-        messageInfo.put("id", messageId);
-        messageInfo.put("roomId", roomId);
-        messageInfo.put("senderId", firebaseUser.getUid());
-        messageInfo.put("message", message);
-        messageInfo.put("time", new Timestamp(new Date() ));
-        messageInfo.put("type", "text");
-
-        batch.set(myMessagesRef, messageInfo);
-
-        friendMessagesRef = db.collection("messages").document(friendId)
-                .collection("messagesWith").document(roomId).collection("messagesOfThisRoom")
-                .document(messageId);
-
-        batch.set(friendMessagesRef, messageInfo);
-
-        batch.commit()
-            .addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception e) {
-                Toast.makeText(getApplicationContext(), "Không thể gửi tin nhắn",
-                        Toast.LENGTH_SHORT).show();
-            }
-        }).addOnSuccessListener(new OnSuccessListener<Void>() {
-            @Override
-            public void onSuccess(Void aVoid) {
-                increaseUnseenCounter(friendId);
-            }
-        });
-    }
-
-    private void increaseUnseenCounter(String friendId) {
+    private void increaseUnseenMessage(String friendId) {
         DocumentReference requestRef = db
                 .collection("messages").document(friendId)
                 .collection("messagesWith").document(roomId);
@@ -416,24 +500,18 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     private void moveToProfileActivity() {
-        friendAvatar.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent profileIntent = new Intent(getApplicationContext(), ProfileActivity.class);
-                profileIntent.putExtra("id", friendId);
-                profileIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                startActivity(profileIntent);
-            }
+        friendAvatar.setOnClickListener(v -> {
+            Intent profileIntent = new Intent(getApplicationContext(), ProfileActivity.class);
+            profileIntent.putExtra("id", friendId);
+            profileIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(profileIntent);
         });
 
-        friendName.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent profileIntent = new Intent(getApplicationContext(), ProfileActivity.class);
-                profileIntent.putExtra("id", friendId);
-                profileIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                startActivity(profileIntent);
-            }
+        friendName.setOnClickListener(v -> {
+            Intent profileIntent = new Intent(getApplicationContext(), ProfileActivity.class);
+            profileIntent.putExtra("id", friendId);
+            profileIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(profileIntent);
         });
     }
 

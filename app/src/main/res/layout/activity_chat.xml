@@ -63,31 +63,98 @@
             android:layout_gravity="bottom"
             android:src="@drawable/clear"
             android:background="@drawable/avatar_circle"
-            android:visibility="gone"/>
+            android:visibility="gone"
+            android:contentDescription="@string/delete" />
 
         <ImageView
             android:id="@+id/chat_preview_image"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:paddingVertical="12dp"
             android:maxWidth="200dp"
             android:maxHeight="300dp"
             android:adjustViewBounds="true"
             android:scaleType="fitCenter"
-            android:visibility="gone"/>
+            android:visibility="gone"
+            android:contentDescription="@string/preview" />
 
         <ProgressBar
-            android:id="@+id/chat_send_progress"
+            android:id="@+id/chat_send_image_progress"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingVertical="5dp"
+            android:paddingHorizontal="15dp"
+            android:paddingVertical="2dp"
             android:layout_gravity="bottom"
             android:indeterminate="false"
             android:max="100"
-            android:progress="1"
+            android:progress="0"
             android:visibility="gone"
             style="?android:attr/progressBarStyleHorizontal"/>
 
     </androidx.cardview.widget.CardView>
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/chat_file_card_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="10dp"
+        android:layout_gravity="end"
+        android:visibility="gone"
+        app:cardCornerRadius="5dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="10dp">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="5dp">
+
+                <TextView
+                    android:id="@+id/chat_file_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/black"/>
+
+                <TextView
+                    android:id="@+id/chat_file_size"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:textColor="@color/black"/>
+
+            </LinearLayout>
+
+            <ProgressBar
+                android:id="@+id/chat_send_file_progress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:indeterminate="false"
+                android:max="100"
+                android:progress="0"
+                android:visibility="invisible"
+                style="?android:attr/progressBarStyleHorizontal"/>
+
+            <ImageButton
+                android:id="@+id/chat_clear_file"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="5dp"
+                android:translationZ="1dp"
+                android:layout_gravity="bottom"
+                android:src="@drawable/clear"
+                android:background="@drawable/avatar_circle"
+                android:contentDescription="@string/delete" />
+
+        </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -100,7 +167,18 @@
             android:padding="15dp"
             android:src="@drawable/image"
             android:layout_gravity="bottom"
-            android:background="?android:selectableItemBackground"/>
+            android:background="?android:selectableItemBackground"
+            android:contentDescription="@string/add_image" />
+
+        <ImageButton
+            android:id="@+id/chat_choose_file"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="15dp"
+            android:src="@drawable/attach"
+            android:layout_gravity="bottom"
+            android:background="?android:selectableItemBackground"
+            android:contentDescription="@string/add_file" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="0dp"

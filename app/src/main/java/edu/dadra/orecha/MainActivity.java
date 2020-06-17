@@ -1,6 +1,6 @@
 package edu.dadra.orecha;
 
-import android.content.DialogInterface;
+import android.Manifest;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -13,17 +13,14 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.bumptech.glide.Glide;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
 import com.google.android.material.badge.BadgeDrawable;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -32,13 +29,9 @@ import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.storage.FirebaseStorage;
 
@@ -74,6 +67,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        requestPermission();
+
         mAuth = FirebaseAuth.getInstance();
         firebaseUser = mAuth.getCurrentUser();
         db = FirebaseFirestore.getInstance();
@@ -91,23 +86,20 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
-            = new BottomNavigationView.OnNavigationItemSelectedListener() {
-        @Override
-        public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-            Fragment fragment;
-            switch (item.getItemId()) {
-                case R.id.navigation_home:
-                    fragment = new ChatListFragment();
-                    openFragment(fragment);
-                    return true;
-                case R.id.navigation_contact:
-                    fragment = new ContactFragment();
-                    openFragment(fragment);
-                    return true;
-            }
-            return false;
-        }
-    };
+            = item -> {
+                Fragment fragment;
+                switch (item.getItemId()) {
+                    case R.id.navigation_home:
+                        fragment = new ChatListFragment();
+                        openFragment(fragment);
+                        return true;
+                    case R.id.navigation_contact:
+                        fragment = new ContactFragment();
+                        openFragment(fragment);
+                        return true;
+                }
+                return false;
+            };
 
     public void openFragment(Fragment fragment) {
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
@@ -155,17 +147,14 @@ public class MainActivity extends AppCompatActivity {
 
     private void displayBottomNavigateBadge() {
         DocumentReference requestRef = db.collection("friendRequest").document(firebaseUser.getUid());
-        requestRef.addSnapshotListener(new EventListener<DocumentSnapshot>() {
-            @Override
-            public void onEvent(@Nullable DocumentSnapshot snapshot, @Nullable FirebaseFirestoreException e) {
-                if (snapshot != null && snapshot.exists()) {
-                    int unseen = snapshot.getLong("unseen").intValue();
-                    BadgeDrawable badge = bottomNavigationView.getOrCreateBadge(R.id.navigation_contact);
-                    if (unseen > 0) {
-                        badge.setVisible(true);
-                    } else {
-                        badge.setVisible(false);
-                    }
+        requestRef.addSnapshotListener((snapshot, e) -> {
+            if (snapshot != null && snapshot.exists()) {
+                int unseen = snapshot.getLong("unseen").intValue();
+                BadgeDrawable badge = bottomNavigationView.getOrCreateBadge(R.id.navigation_contact);
+                if (unseen > 0) {
+                    badge.setVisible(true);
+                } else {
+                    badge.setVisible(false);
                 }
             }
         });
@@ -173,41 +162,35 @@ public class MainActivity extends AppCompatActivity {
 
     private void getCurrentUserData() {
         db.collection("users").document(firebaseUser.getUid())
-                .addSnapshotListener(new EventListener<DocumentSnapshot>() {
-                    @Override
-                    public void onEvent(@Nullable DocumentSnapshot snapshot, @Nullable FirebaseFirestoreException e) {
-                        if (e != null) {
-                            Log.d(TAG, "Listen failed.", e);
-                            return;
-                        }
+                .addSnapshotListener((snapshot, e) -> {
+                    if (e != null) {
+                        Log.d(TAG, "Listen failed.", e);
+                        return;
+                    }
 
-                        if (snapshot != null && snapshot.exists()) {
-                            currentUserData = snapshot.toObject(Users.class);
-                            if (!currentUserData.getPhotoUrl().equals("")) {
-                                Glide.with(getApplicationContext())
-                                        .load(storage.getReferenceFromUrl(currentUserData.getPhotoUrl()))
-                                        .placeholder(R.drawable.orange)
-                                        .into(currentUserAvatar);
-                            } else Glide.with(getApplicationContext())
-                                    .load(R.drawable.orange)
+                    if (snapshot != null && snapshot.exists()) {
+                        currentUserData = snapshot.toObject(Users.class);
+                        if (!currentUserData.getPhotoUrl().equals("")) {
+                            Glide.with(getApplicationContext())
+                                    .load(storage.getReferenceFromUrl(currentUserData.getPhotoUrl()))
                                     .placeholder(R.drawable.orange)
                                     .into(currentUserAvatar);
+                        } else Glide.with(getApplicationContext())
+                                .load(R.drawable.orange)
+                                .placeholder(R.drawable.orange)
+                                .into(currentUserAvatar);
 
-                            mainTitle.setText(currentUserData.getDisplayName());
-                        }
+                        mainTitle.setText(currentUserData.getDisplayName());
                     }
                 });
     }
 
     private void moveToProfileActivity() {
-        currentUserAvatar.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent profileIntent = new Intent(getApplicationContext(), ProfileActivity.class);
-                profileIntent.putExtra("id", firebaseUser.getUid());
-                profileIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                startActivity(profileIntent);
-            }
+        currentUserAvatar.setOnClickListener(v -> {
+            Intent profileIntent = new Intent(getApplicationContext(), ProfileActivity.class);
+            profileIntent.putExtra("id", firebaseUser.getUid());
+            profileIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(profileIntent);
         });
     }
 
@@ -221,47 +204,36 @@ public class MainActivity extends AppCompatActivity {
         TextInputLayout addFriendEmailField = view.findViewById(R.id.textLayout_add_friend_by_email);
 
         builder.setPositiveButton("Thêm", null);
-        builder.setNegativeButton("Hủy", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.cancel();
-            }
-        });
+        builder.setNegativeButton("Hủy", (dialog, which) -> dialog.cancel());
 
         dialog = builder.create();
         dialog.show();
 
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String friendEmail = addFriendEmailField.getEditText().getText().toString().trim();
-                if (friendEmail.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-                    findUser(friendEmail);
-                } else {
-                    addFriendEmailField.setError("Không hợp lệ");
-                }
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String friendEmail = addFriendEmailField.getEditText().getText().toString().trim();
+            if (friendEmail.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+                findUser(friendEmail);
+            } else {
+                addFriendEmailField.setError("Không hợp lệ");
             }
         });
     }
 
-    private void findUser (String friendEmail) {
+    private void findUser(String friendEmail) {
 
         db.collection("users")
                 .whereEqualTo("email", friendEmail)
                 .limit(1)
                 .get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        if(task.isSuccessful()) {
-                            if (task.getResult().isEmpty()) {
-                                Toast.makeText(getApplicationContext(), "Không tìm thấy", Toast.LENGTH_SHORT).show();
-                                Log.d(TAG, "Error getting documents: ", task.getException());
-                            } else {
-                                dialog.dismiss();
-                                for (QueryDocumentSnapshot document : Objects.requireNonNull(task.getResult())) {
-                                    validateExistFriend(document);
-                                }
+                .addOnCompleteListener(task -> {
+                    if(task.isSuccessful()) {
+                        if (task.getResult().isEmpty()) {
+                            Toast.makeText(getApplicationContext(), "Không tìm thấy", Toast.LENGTH_SHORT).show();
+                            Log.d(TAG, "Error getting documents: ", task.getException());
+                        } else {
+                            dialog.dismiss();
+                            for (QueryDocumentSnapshot document : Objects.requireNonNull(task.getResult())) {
+                                validateExistFriend(document);
                             }
                         }
                     }
@@ -273,36 +245,27 @@ public class MainActivity extends AppCompatActivity {
                 .collection("userContacts").document(friend.getId());
         final String friendId = friend.getId();
 
-        friendIdRef.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
-            @Override
-            public void onSuccess(DocumentSnapshot snapshot) {
-                if (snapshot.exists() || friendId.equals(firebaseUser.getUid())) {
-                    Toast.makeText(getApplicationContext(), "Người này đã có trong danh bạ", Toast.LENGTH_SHORT).show();
-                } else {
-                    DocumentReference friendRequestRef = db.collection("friendRequest").document(friendId)
-                            .collection("listOfFriendRequest").document(currentUserData.getId());
-                    friendRequestRef.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
-                        @Override
-                        public void onSuccess(DocumentSnapshot snapshot) {
-                            if (snapshot.exists()) {
-                                Toast.makeText(getApplicationContext(), "Hãy đợi đối phương đồng ý", Toast.LENGTH_SHORT).show();
+        friendIdRef.get().addOnSuccessListener(snapshot -> {
+            if (snapshot.exists() || friendId.equals(firebaseUser.getUid())) {
+                Toast.makeText(getApplicationContext(), "Người này đã có trong danh bạ", Toast.LENGTH_SHORT).show();
+            } else {
+                DocumentReference friendRequestRef = db.collection("friendRequest").document(friendId)
+                        .collection("listOfFriendRequest").document(currentUserData.getId());
+                friendRequestRef.get().addOnSuccessListener(snapshot1 -> {
+                    if (snapshot1.exists()) {
+                        Toast.makeText(getApplicationContext(), "Hãy đợi đối phương đồng ý", Toast.LENGTH_SHORT).show();
+                    } else {
+                        DocumentReference myRequestRef = db.collection("friendRequest").document(currentUserData.getId())
+                                .collection("listOfFriendRequest").document(friendId);
+                        myRequestRef.get().addOnSuccessListener(snapshot11 -> {
+                            if (snapshot11.exists()) {
+                                Toast.makeText(getApplicationContext(), "Họ đã gửi yêu cầu kết bạn\n Hãy đồng ý", Toast.LENGTH_SHORT).show();
                             } else {
-                                DocumentReference myRequestRef = db.collection("friendRequest").document(currentUserData.getId())
-                                        .collection("listOfFriendRequest").document(friendId);
-                                myRequestRef.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
-                                    @Override
-                                    public void onSuccess(DocumentSnapshot snapshot) {
-                                        if (snapshot.exists()) {
-                                            Toast.makeText(getApplicationContext(), "Họ đã gửi yêu cầu kết bạn\n Hãy đồng ý", Toast.LENGTH_SHORT).show();
-                                        } else {
-                                            sendFriendRequest(friendId);
-                                        }
-                                    }
-                                });
+                                sendFriendRequest(friendId);
                             }
-                        }
-                    });
-                }
+                        });
+                    }
+                });
             }
         });
     }
@@ -320,12 +283,9 @@ public class MainActivity extends AppCompatActivity {
         requestInfo.put("time", new Timestamp(new Date() ));
 
         friendRequestRef.set(requestInfo)
-                .addOnSuccessListener(new OnSuccessListener<Void>() {
-                    @Override
-                    public void onSuccess(Void aVoid) {
-                        increaseUnseenCounter(friendId);
-                        Toast.makeText(getApplicationContext(), "Đã gửi yêu cầu kết bạn", Toast.LENGTH_SHORT).show();
-                    }
+                .addOnSuccessListener(aVoid -> {
+                    increaseUnseenCounter(friendId);
+                    Toast.makeText(getApplicationContext(), "Đã gửi yêu cầu kết bạn", Toast.LENGTH_SHORT).show();
                 });
     }
 
@@ -353,18 +313,13 @@ public class MainActivity extends AppCompatActivity {
     private void confirmLogout() {
         new MaterialAlertDialogBuilder(this, R.style.AlertDialogTheme)
                 .setTitle("Xác nhận ?")
-                .setNegativeButton("Hủy bỏ", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                    }
-                })
-                .setPositiveButton("Đăng xuất", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        logout();
-                    }
-                })
+                .setNegativeButton("Hủy bỏ", (dialog, which) -> dialog.dismiss())
+                .setPositiveButton("Đăng xuất", (dialog, which) -> logout())
                 .show();
+    }
+
+    private void requestPermission() {
+        ActivityCompat.requestPermissions(MainActivity.this,
+                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},1);
     }
 }
