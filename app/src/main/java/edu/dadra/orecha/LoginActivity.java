@@ -27,9 +27,9 @@ public class LoginActivity extends AppCompatActivity {
 
     private static final String TAG = "LoginActivity";
 
-    private LinearLayout loginLayout;
+    private LinearLayout loginTopLayout, loginMidLayout;
     private Button loginButton, forgotPasswordButton;
-    private TextView statusLogin, hintLoginText;
+    private TextView hintLoginText;
     private String authEmail, authPassword;
     private TextInputLayout emailField, passwordField;
     private AlertDialog progressDialog;
@@ -47,29 +47,27 @@ public class LoginActivity extends AppCompatActivity {
 
         initProgressDialog();
 
-        loginButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                authEmail = emailField.getEditText().getText().toString().trim();
-                authPassword = passwordField.getEditText().getText().toString().trim();
-                login(authEmail, authPassword);
-            }
+        loginButton.setOnClickListener(view -> {
+            authEmail = emailField.getEditText().getText().toString().trim();
+            authPassword = passwordField.getEditText().getText().toString().trim();
+            login(authEmail, authPassword);
         });
 
         forgotPasswordButton.setOnClickListener(v -> moveToForgotPasswordActivity());
 
-        loginLayout.setOnClickListener(v -> hideKeyboard());
+        loginTopLayout.setOnClickListener(v -> hideKeyboard());
+        loginMidLayout.setOnClickListener(v -> hideKeyboard());
 
         mAuth = FirebaseAuth.getInstance();
     }
 
     private void initLayout() {
-        loginLayout = findViewById(R.id.login_layout);
+        loginTopLayout = findViewById(R.id.login_top_layout);
+        loginMidLayout = findViewById(R.id.login_mid_layout);
         emailField = findViewById(R.id.login_email);
         passwordField = findViewById(R.id.login_password);
         loginButton = findViewById(R.id.login_button);
         forgotPasswordButton = findViewById(R.id.login_forgot_password);
-        statusLogin = findViewById(R.id.login_status);
         hintLoginText = findViewById(R.id.login_hint);
     }
 
@@ -110,8 +108,7 @@ public class LoginActivity extends AppCompatActivity {
                     } else {
                         Log.d(TAG, "loginWithEmail: fail");
                         Toast.makeText(LoginActivity.this, "Không thể xác minh người dùng",
-                                Toast.LENGTH_SHORT).show();
-                        statusLogin.setText("Đăng nhập thất bại");
+                                Toast.LENGTH_LONG).show();
                     }
                     progressDialog.dismiss();
                 });

@@ -1,11 +1,9 @@
 package edu.dadra.orecha.Adapter;
 
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -19,13 +17,12 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.Task;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.WriteBatch;
 import com.google.firebase.storage.FirebaseStorage;
 
@@ -67,40 +64,29 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
                 .placeholder(R.drawable.orange)
                 .into(holder.avatar);
 
-        holder.itemView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (friend.getRoomId().equals("")) {
-                    createChatRoom(friend);
-                } else {
-                    startChatRoom(friend.getId(), friend.getRoomId());
-                }
+        holder.itemView.setOnClickListener(v -> {
+            if (friend.getRoomId().equals("")) {
+                createChatRoom(friend);
+            } else {
+                startChatRoom(friend.getId(), friend.getRoomId());
             }
         });
 
         PopupMenu popup = new PopupMenu(context, holder.menu);
         popup.inflate(R.menu.contact_menu);
-        popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-            @Override
-            public boolean onMenuItemClick(MenuItem item) {
-                switch (item.getItemId()) {
-                    case R.id.show_profile_option:
-                        moveToProfileActivity(friend);
-                        return true;
-                    case R.id.delete_friend_option:
-                        confirmDelete(friend);
-                        return true;
-                    default:
-                        return false;
-                }
+        popup.setOnMenuItemClickListener(item -> {
+            switch (item.getItemId()) {
+                case R.id.show_profile_option:
+                    moveToProfileActivity(friend);
+                    return true;
+                case R.id.delete_friend_option:
+                    confirmDelete(friend);
+                    return true;
+                default:
+                    return false;
             }
         });
-        holder.menu.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                popup.show();
-            }
-        });
+        holder.menu.setOnClickListener(v -> popup.show());
 
     }
 
@@ -171,20 +157,12 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
         batch.update(friendIdRef, "roomId", roomId);
         batch.update(myIdRef, "roomId", roomId);
 
-        batch.commit().addOnCompleteListener(new OnCompleteListener<Void>() {
-            @Override
-            public void onComplete(@NonNull Task<Void> task) {
-                Log.d(TAG, "Create room complete");
-                if (task.isSuccessful()) {
-                    startChatRoom(friend.getId(), roomId);
-                }
+        batch.commit().addOnCompleteListener(task -> {
+            Log.d(TAG, "Create room complete");
+            if (task.isSuccessful()) {
+                startChatRoom(friend.getId(), roomId);
             }
-        }).addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception e) {
-                Log.d(TAG, "Create room fail");
-            }
-        });
+        }).addOnFailureListener(e -> Log.d(TAG, "Create room fail"));
     }
 
     private void moveToProfileActivity(Friends friend) {
@@ -213,41 +191,61 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
                     .collection("userRooms").document(friend.getRoomId());
             batch.delete(myRoomIdRef);
             batch.delete(friendRoomIdRef);
-
-            //Delete both messages collection
-//            DocumentReference myMessagesRef = db.collection("messages").document(currentUserData.getId())
-//                    .collection("messagesWith").document(friend.getId());
-//            DocumentReference friendMessagesRef = db.collection("messages").document(friend.getId())
-//                    .collection("messagesWith").document(currentUserData.getId());
-//            batch.delete(myMessagesRef);
-//            batch.delete(friendMessagesRef);
         } catch (IllegalArgumentException ex) {
             Log.d(TAG, "Have no room");
         }
 
-        batch.commit().addOnCompleteListener(new OnCompleteListener<Void>() {
-            @Override
-            public void onComplete(@NonNull Task<Void> task) {
-                Toast.makeText(context, "Đã xóa bạn", Toast.LENGTH_SHORT).show();
-            }
-        });
+        batch.commit().addOnCompleteListener(task -> Toast.makeText(context, "Đã xóa bạn", Toast.LENGTH_SHORT).show());
+    }
+
+    private void deleteAllMessage(Friends friend) {
+        CollectionReference myMessagesRef = db
+                .collection("messages").document(currentUserData.getId())
+                .collection("messagesWith").document(friend.getRoomId())
+                .collection("messagesOfThisRoom");
+        myMessagesRef.get()
+                .addOnCompleteListener(task -> {
+                    if(task.isSuccessful()) {
+                        for(QueryDocumentSnapshot documentSnapshot : task.getResult()) {
+                            documentSnapshot.getReference().delete();
+                        }
+                    } else {
+                        Log.d(TAG, "Error getting documents: ", task.getException());
+                    }
+                });
+        db.collection("messages").document(currentUserData.getId())
+                .collection("messagesWith").document(friend.getRoomId()).delete();
+
+        CollectionReference friendMessageRef = db
+                .collection("messages").document(friend.getId())
+                .collection("messagesWith").document(friend.getRoomId())
+                .collection("messagesOfThisRoom");
+        friendMessageRef.get()
+                .addOnCompleteListener(task -> {
+                    if(task.isSuccessful()) {
+                        for(QueryDocumentSnapshot documentSnapshot : task.getResult()) {
+                            documentSnapshot.getReference().delete();
+                        }
+                    } else {
+                        Log.d(TAG, "Error getting documents: ", task.getException());
+                    }
+                });
+        db.collection("messages").document(friend.getId())
+                .collection("messagesWith").document(friend.getRoomId()).delete();
     }
 
     private void confirmDelete(Friends friend) {
         new MaterialAlertDialogBuilder(context, R.style.AlertDialogTheme)
                 .setTitle("Xóa ?")
                 .setMessage("Xóa cả tin nhắn với người này")
-                .setNegativeButton("Hủy bỏ", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
+                .setNegativeButton("Hủy bỏ", (dialog, which) -> dialog.dismiss())
+                .setPositiveButton("Xóa", (dialog, which) -> {
+                    try {
+                        deleteAllMessage(friend);
+                    } catch (Exception e) {
+                       Log.d(TAG, "Have no message");
                     }
-                })
-                .setPositiveButton("Xóa", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        deleteFriend(friend);
-                    }
+                    deleteFriend(friend);
                 })
                 .show();
     }

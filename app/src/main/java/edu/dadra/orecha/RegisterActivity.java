@@ -15,16 +15,10 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
 import com.google.android.material.textfield.TextInputLayout;
-import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -36,7 +30,7 @@ public class RegisterActivity extends AppCompatActivity {
 
     private static final String TAG = "RegisterActivity";
 
-    private LinearLayout registerLayout;
+    private LinearLayout registerTopLayout, registerMidLayout;
     private TextInputLayout emailField, passwordField, rePasswordField;
     private Button registerButton;
     private TextView hintRegisterText;
@@ -60,26 +54,20 @@ public class RegisterActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
-        registerButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String authEmail = emailField.getEditText().getText().toString().trim();
-                String authPassword = passwordField.getEditText().getText().toString().trim();
-                createAccount(authEmail, authPassword);
-            }
+        registerButton.setOnClickListener(v -> {
+            String authEmail = emailField.getEditText().getText().toString().trim();
+            String authPassword = passwordField.getEditText().getText().toString().trim();
+            createAccount(authEmail, authPassword);
         });
 
-        registerLayout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                hideKeyboard();
-            }
-        });
+        registerTopLayout.setOnClickListener(v -> hideKeyboard());
+        registerMidLayout.setOnClickListener(v -> hideKeyboard());
 
     }
 
     private void initLayout() {
-        registerLayout = findViewById(R.id.register_layout);
+        registerTopLayout = findViewById(R.id.register_top_layout);
+        registerMidLayout = findViewById(R.id.register_mid_layout);
         emailField = findViewById(R.id.register_email);
         passwordField = findViewById(R.id.register_password);
         rePasswordField = findViewById(R.id.register_rePassword);
@@ -118,21 +106,18 @@ public class RegisterActivity extends AppCompatActivity {
         progressDialog.show();
 
         mAuth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-                    @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
-                        if (task.isSuccessful()) {
-                            Log.d(TAG,"Create account success");
-                            FirebaseUser user = mAuth.getCurrentUser();
-                            addUserInformation(user);
-                        } else {
-                            Log.d(TAG,"Create account failed");
-                            Toast.makeText(RegisterActivity.this, "Đăng kí thất bại\n" + task.getException().getMessage(),
-                                    Toast.LENGTH_LONG).show();
-                            progressDialog.dismiss();
-                        }
-
+                .addOnCompleteListener(this, task -> {
+                    if (task.isSuccessful()) {
+                        Log.d(TAG,"Create account success");
+                        FirebaseUser user = mAuth.getCurrentUser();
+                        addUserInformation(user);
+                    } else {
+                        Log.d(TAG,"Create account failed");
+                        Toast.makeText(RegisterActivity.this, "Đăng kí thất bại\n" + task.getException().getMessage(),
+                                Toast.LENGTH_LONG).show();
+                        progressDialog.dismiss();
                     }
+
                 });
     }
 
@@ -183,21 +168,15 @@ public class RegisterActivity extends AppCompatActivity {
 
         db.collection("users").document(user.getUid())
                 .set(personalData)
-                .addOnSuccessListener(new OnSuccessListener<Void>() {
-                    @Override
-                    public void onSuccess(Void aVoid) {
-                        Toast.makeText(getApplicationContext(), "Nhấn vào ảnh đại diện để thay đổi thông tin",
-                                Toast.LENGTH_LONG).show();
-                        moveToMainActivity();
-                        progressDialog.dismiss();
-                    }
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(getApplicationContext(), "Nhấn vào ảnh đại diện để thay đổi thông tin",
+                            Toast.LENGTH_LONG).show();
+                    moveToMainActivity();
+                    progressDialog.dismiss();
                 })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Log.d(TAG, "Error writing document", e);
-                        progressDialog.dismiss();
-                    }
+                .addOnFailureListener(e -> {
+                    Log.d(TAG, "Error writing document", e);
+                    progressDialog.dismiss();
                 });
     }
 

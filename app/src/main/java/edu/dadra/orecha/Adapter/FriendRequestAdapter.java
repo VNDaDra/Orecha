@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -15,9 +16,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -64,19 +62,11 @@ public class FriendRequestAdapter extends FirestoreRecyclerAdapter <FriendReques
                 .placeholder(R.drawable.orange)
                 .into(holder.avatar);
 
-        holder.declineButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                deleteFriendRequest(friendRequest);
-            }
-        });
+        holder.declineButton.setOnClickListener(v -> deleteFriendRequest(friendRequest));
 
-        holder.acceptButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                holder.acceptButton.setEnabled(false);
-                updateContact(friendRequest);
-            }
+        holder.acceptButton.setOnClickListener(v -> {
+            holder.acceptButton.setEnabled(false);
+            updateContact(friendRequest, holder);
         });
     }
 
@@ -118,36 +108,35 @@ public class FriendRequestAdapter extends FirestoreRecyclerAdapter <FriendReques
         friendRequestRef.delete();
     }
 
-    private void updateContact(FriendRequest friendRequest) {
+    private void updateContact(FriendRequest friendRequest, ViewHolder holder) {
         db.collection("users").document(friendRequest.getSenderId())
                 .get()
-                .addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
-            @Override
-            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
-                if (task.isSuccessful()) {
-                    DocumentSnapshot document = task.getResult();
-                    if (document.exists()) {
-                        WriteBatch batch = db.batch();
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        DocumentSnapshot document = task.getResult();
+                        if (document.exists()) {
+                            WriteBatch batch = db.batch();
 
-                        DocumentReference friendIdRef = db.collection("contacts").document(currentUserData.getId())
-                                .collection("userContacts").document(friendRequest.getSenderId());
-                        batch.set(friendIdRef, Objects.requireNonNull(document.getData()));
+                            DocumentReference friendIdRef = db.collection("contacts").document(currentUserData.getId())
+                                    .collection("userContacts").document(friendRequest.getSenderId());
+                            batch.set(friendIdRef, Objects.requireNonNull(document.getData()));
 
-                        DocumentReference myIdRef = db.collection("contacts").document(friendRequest.getSenderId())
-                                .collection("userContacts").document(currentUserData.getId());
-                        batch.set(myIdRef, currentUserData);
+                            DocumentReference myIdRef = db.collection("contacts").document(friendRequest.getSenderId())
+                                    .collection("userContacts").document(currentUserData.getId());
+                            batch.set(myIdRef, currentUserData);
 
-                        batch.commit().addOnCompleteListener(new OnCompleteListener<Void>() {
-                            @Override
-                            public void onComplete(@NonNull Task<Void> task) {
-                                createChatRoom(friendRequest);
-                                deleteFriendRequest(friendRequest);
-                            }
-                        });
+                            batch.commit().addOnCompleteListener(task1 -> {
+                                if(task1.isSuccessful()){
+                                    createChatRoom(friendRequest);
+                                    deleteFriendRequest(friendRequest);
+                                } else {
+                                    holder.acceptButton.setEnabled(true);
+                                    Toast.makeText(context, "LỖI\n Vui lòng thử lại", Toast.LENGTH_LONG).show();
+                                }
+                            });
+                        }
                     }
-                }
-            }
-        });
+                });
     }
 
     private void createChatRoom(FriendRequest friendRequest) {
@@ -182,17 +171,9 @@ public class FriendRequestAdapter extends FirestoreRecyclerAdapter <FriendReques
         batch.update(friendIdRef, "roomId", roomId);
         batch.update(myIdRef, "roomId", roomId);
 
-        batch.commit().addOnCompleteListener(new OnCompleteListener<Void>() {
-            @Override
-            public void onComplete(@NonNull Task<Void> task) {
-                Log.d(TAG, "Create room complete");
-            }
-        }).addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception e) {
-                Log.d(TAG, "Create room fail");
-            }
-        });
+        batch.commit()
+                .addOnCompleteListener(task -> Log.d(TAG, "Create room complete"))
+                .addOnFailureListener(e -> Log.d(TAG, "Create room fail"));
     }
 
     private void getCurrentUserData() {

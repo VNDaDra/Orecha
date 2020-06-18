@@ -1,11 +1,9 @@
 package edu.dadra.orecha.Adapter;
 
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -13,25 +11,19 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.widget.PopupMenu;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.WriteBatch;
 import com.google.firebase.storage.FirebaseStorage;
 
@@ -77,36 +69,25 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Rooms, ChatListAda
 
         displayUnseenMessage(room.getRoomId(), holder);
 
-        holder.itemView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startChatRoom(room);
-            }
-        });
+        holder.itemView.setOnClickListener(v -> startChatRoom(room));
 
         PopupMenu popup = new PopupMenu(context, holder.time);
         popup.inflate(R.menu.chat_list_menu);
-        popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-            @Override
-            public boolean onMenuItemClick(MenuItem item) {
-                switch (item.getItemId()) {
-                    case R.id.show_profile_option:
-                        moveToProfileActivity(room);
-                        return true;
-                    case R.id.delete_message_option:
-                        confirmDelete(room);
-                        return true;
-                    default:
-                        return false;
-                }
+        popup.setOnMenuItemClickListener(item -> {
+            switch (item.getItemId()) {
+                case R.id.show_profile_option:
+                    moveToProfileActivity(room);
+                    return true;
+                case R.id.delete_message_option:
+                    confirmDelete(room);
+                    return true;
+                default:
+                    return false;
             }
         });
-        holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
-                popup.show();
-                return true;
-            }
+        holder.itemView.setOnLongClickListener(v -> {
+            popup.show();
+            return true;
         });
     }
 
@@ -143,25 +124,22 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Rooms, ChatListAda
     private void displayFriendInformation(String friendId, ViewHolder holder) {
         DocumentReference friendRef = db
                 .collection("users").document(friendId);
-        friendRef.addSnapshotListener(new EventListener<DocumentSnapshot>() {
-            @Override
-            public void onEvent(@Nullable DocumentSnapshot snapshot, @Nullable FirebaseFirestoreException e) {
-                if (e != null) {
-                    Log.d(TAG, "Listen failed.", e);
-                    return;
-                }
-                Users friend = snapshot.toObject(Users.class);
-                holder.displayName.setText(friend.getDisplayName());
-                if (!friend.getPhotoUrl().equals("")) {
-                    Glide.with(context)
-                            .load(storage.getReferenceFromUrl(friend.getPhotoUrl()))
-                            .placeholder(R.drawable.orange)
-                            .into(holder.avatar);
-                } else Glide.with(context)
-                        .load(R.drawable.orange)
+        friendRef.addSnapshotListener((snapshot, e) -> {
+            if (e != null) {
+                Log.d(TAG, "Listen failed.", e);
+                return;
+            }
+            Users friend = snapshot.toObject(Users.class);
+            holder.displayName.setText(friend.getDisplayName());
+            if (!friend.getPhotoUrl().equals("")) {
+                Glide.with(context)
+                        .load(storage.getReferenceFromUrl(friend.getPhotoUrl()))
                         .placeholder(R.drawable.orange)
                         .into(holder.avatar);
-            }
+            } else Glide.with(context)
+                    .load(R.drawable.orange)
+                    .placeholder(R.drawable.orange)
+                    .into(holder.avatar);
         });
     }
 
@@ -173,37 +151,34 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Rooms, ChatListAda
         Query query = messagesRef.orderBy("time", Query.Direction.DESCENDING);
         lastMessage = "";
         query.limit(1)
-                .addSnapshotListener(new EventListener<QuerySnapshot>() {
-                    @Override
-                    public void onEvent(@Nullable QuerySnapshot querySnapshot, @Nullable FirebaseFirestoreException e) {
-                        if (e != null) {
-                            Log.d(TAG, "Listen failed.", e);
-                            return;
-                        }
-                        for (QueryDocumentSnapshot doc : querySnapshot) {
-                            Message lastMesObj = doc.toObject(Message.class);
-                            lastMessage = lastMesObj.getMessage();
-                            type = lastMesObj.getType();
-                            date = lastMesObj.getTime().toDate();
-                        }
-                        if (lastMessage.equals("")) {
-                            holder.lastMessage.setVisibility(View.INVISIBLE);
-                            holder.time.setVisibility(View.INVISIBLE);
-                        }
-                        else if (type.equals("image")) {
-                            holder.lastMessage.setText(R.string.image_tag);
-                            holder.time.setText(formatDate(date));
-                        } else if (type.equals("file")) {
-                            holder.lastMessage.setText("[File]");
-                            holder.time.setText(formatDate(date));
-                        }
-                        else {
-                            holder.lastMessage.setText(lastMessage);
-                            holder.time.setText(formatDate(date));
-                        }
-
-                        lastMessage = "";
+                .addSnapshotListener((querySnapshot, e) -> {
+                    if (e != null) {
+                        Log.d(TAG, "Listen failed.", e);
+                        return;
                     }
+                    for (QueryDocumentSnapshot doc : querySnapshot) {
+                        Message lastMesObj = doc.toObject(Message.class);
+                        lastMessage = lastMesObj.getMessage();
+                        type = lastMesObj.getType();
+                        date = lastMesObj.getTime().toDate();
+                    }
+                    if (lastMessage.equals("")) {
+                        holder.lastMessage.setVisibility(View.INVISIBLE);
+                        holder.time.setVisibility(View.INVISIBLE);
+                    }
+                    else if (type.equals("image")) {
+                        holder.lastMessage.setText(R.string.image_tag);
+                        holder.time.setText(formatDate(date));
+                    } else if (type.equals("file")) {
+                        holder.lastMessage.setText(R.string.file_tag);
+                        holder.time.setText(formatDate(date));
+                    }
+                    else {
+                        holder.lastMessage.setText(lastMessage);
+                        holder.time.setText(formatDate(date));
+                    }
+
+                    lastMessage = "";
                 });
     }
 
@@ -211,21 +186,18 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Rooms, ChatListAda
         DocumentReference requestRef = db
                 .collection("messages").document(currentUserData.getId())
                 .collection("messagesWith").document(roomId);
-        requestRef.addSnapshotListener(new EventListener<DocumentSnapshot>() {
-            @Override
-            public void onEvent(@Nullable DocumentSnapshot snapshot, @Nullable FirebaseFirestoreException e) {
-                if (snapshot != null && snapshot.exists()) {
-                    int unseenCounter = snapshot.getLong("unseen").intValue();
-                    if (unseenCounter > 0 && unseenCounter < 9) {
-                        holder.unseen.setText(String.valueOf(unseenCounter));
-                        holder.unseen.setVisibility(View.VISIBLE);
-                    } else if (unseenCounter > 9) {
-                        holder.unseen.setText("9+");
-                        holder.unseen.setVisibility(View.VISIBLE);
-                    }
-                    else {
-                        holder.unseen.setVisibility(View.INVISIBLE);
-                    }
+        requestRef.addSnapshotListener((snapshot, e) -> {
+            if (snapshot != null && snapshot.exists()) {
+                int unseenCounter = snapshot.getLong("unseen").intValue();
+                if (unseenCounter > 0 && unseenCounter < 9) {
+                    holder.unseen.setText(String.valueOf(unseenCounter));
+                    holder.unseen.setVisibility(View.VISIBLE);
+                } else if (unseenCounter > 9) {
+                    holder.unseen.setText("9+");
+                    holder.unseen.setVisibility(View.VISIBLE);
+                }
+                else {
+                    holder.unseen.setVisibility(View.INVISIBLE);
                 }
             }
         });
@@ -281,44 +253,55 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Rooms, ChatListAda
         batch.update(friendRef, "roomId", "");
         batch.update(myRef, "roomId", "");
 
-//        CollectionReference myMessagesRef = db
-//                .collection("messages").document(currentUserData.getId())
-//                .collection("messagesWith").document(room.getRoomId())
-//                .collection("messagesOfThisRoom");
-//        DocumentReference friendMessagesRef = db.collection("messages").document(room.getRoomId())
-//                .collection("messagesWith").document(currentUserData.getId());
-//        batch.delete(myMessagesRef);
-//        batch.delete(friendMessagesRef);
-
         batch.commit()
-                .addOnSuccessListener(new OnSuccessListener<Void>() {
-                    @Override
-                    public void onSuccess(Void aVoid) {
-                        Toast.makeText(context, "Đã xóa", Toast.LENGTH_SHORT).show();
-                    }
-                }).addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Toast.makeText(context, "Không thể xóa", Toast.LENGTH_SHORT).show();
+                .addOnSuccessListener(aVoid -> Toast.makeText(context, "Đã xóa", Toast.LENGTH_SHORT).show())
+                .addOnFailureListener(e -> Toast.makeText(context, "Không thể xóa", Toast.LENGTH_SHORT).show());
+    }
+
+    private void deleteAllMessage(Rooms room) {
+        CollectionReference myMessagesRef = db
+                .collection("messages").document(currentUserData.getId())
+                .collection("messagesWith").document(room.getRoomId())
+                .collection("messagesOfThisRoom");
+        myMessagesRef.get()
+                .addOnCompleteListener(task -> {
+                    if(task.isSuccessful()) {
+                        for(QueryDocumentSnapshot documentSnapshot : task.getResult()) {
+                            documentSnapshot.getReference().delete();
+                        }
+                    } else {
+                        Log.d(TAG, "Error getting documents: ", task.getException());
                     }
                 });
+        db.collection("messages").document(currentUserData.getId())
+                .collection("messagesWith").document(room.getRoomId()).delete();
+
+        CollectionReference friendMessageRef = db
+                .collection("messages").document(room.getFriendId())
+                .collection("messagesWith").document(room.getRoomId())
+                .collection("messagesOfThisRoom");
+        friendMessageRef.get()
+                .addOnCompleteListener(task -> {
+                    if(task.isSuccessful()) {
+                        for(QueryDocumentSnapshot documentSnapshot : task.getResult()) {
+                            documentSnapshot.getReference().delete();
+                        }
+                    } else {
+                        Log.d(TAG, "Error getting documents: ", task.getException());
+                    }
+                });
+        db.collection("messages").document(room.getFriendId())
+                .collection("messagesWith").document(room.getRoomId()).delete();
     }
 
     private void confirmDelete(Rooms room) {
         new MaterialAlertDialogBuilder(context, R.style.AlertDialogTheme)
-                .setTitle("Xóa ?")
+                .setTitle("Xóa phòng chat?")
                 .setMessage("Xóa cả tin nhắn của đối phương")
-                .setNegativeButton("Hủy bỏ", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                    }
-                })
-                .setPositiveButton("Xóa", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        deleteRoom(room);
-                    }
+                .setNegativeButton("Hủy bỏ", (dialog, which) -> dialog.dismiss())
+                .setPositiveButton("Xóa", (dialog, which) -> {
+                    deleteAllMessage(room);
+                    deleteRoom(room);
                 })
                 .show();
     }
