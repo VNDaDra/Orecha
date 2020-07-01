@@ -84,7 +84,7 @@ public class ChatAdapter extends FirestoreRecyclerAdapter<Message, ChatAdapter.V
         } else if (message.getType().equals("file") && !message.getMessage().equals("")) {
             StorageReference fileRef = storage.getReferenceFromUrl(message.getMessage());
             holder.fileName.setText(message.getFile().getName());
-            holder.fileSize.setText(String.valueOf(message.getFile().getSizeInKB()));
+            holder.fileSize.setText(message.getFile().getSizeInKB() + " KB");
 
             holder.download.setOnClickListener(v -> downloadFile(fileRef));
             holder.fileLayout.setOnLongClickListener(v -> {

@@ -82,7 +82,7 @@ public class ForgotPasswordActivity extends AppCompatActivity {
                         emailField.getEditText().setText("");
                     } else {
                         progressDialog.dismiss();
-                        Toast.makeText(getApplicationContext(), "Lỗi \n" + task.getException(), Toast.LENGTH_LONG).show();
+                        Toast.makeText(getApplicationContext(), "Lỗi\n" + task.getException(), Toast.LENGTH_LONG).show();
                     }
                 });
     }

@@ -233,14 +233,14 @@ public class MainActivity extends AppCompatActivity {
                         } else {
                             dialog.dismiss();
                             for (QueryDocumentSnapshot document : Objects.requireNonNull(task.getResult())) {
-                                validateExistFriend(document);
+                                validateFriendRequest(document);
                             }
                         }
                     }
                 });
     }
 
-    private void validateExistFriend(QueryDocumentSnapshot friend) {
+    private void validateFriendRequest(QueryDocumentSnapshot friend) {
         DocumentReference friendIdRef = db.collection("contacts").document(firebaseUser.getUid())
                 .collection("userContacts").document(friend.getId());
         final String friendId = friend.getId();
@@ -257,8 +257,8 @@ public class MainActivity extends AppCompatActivity {
                     } else {
                         DocumentReference myRequestRef = db.collection("friendRequest").document(currentUserData.getId())
                                 .collection("listOfFriendRequest").document(friendId);
-                        myRequestRef.get().addOnSuccessListener(snapshot11 -> {
-                            if (snapshot11.exists()) {
+                        myRequestRef.get().addOnSuccessListener(snapshot2 -> {
+                            if (snapshot2.exists()) {
                                 Toast.makeText(getApplicationContext(), "Họ đã gửi yêu cầu kết bạn\n Hãy đồng ý", Toast.LENGTH_SHORT).show();
                             } else {
                                 sendFriendRequest(friendId);

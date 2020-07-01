@@ -263,7 +263,7 @@ public class ChatActivity extends AppCompatActivity {
                 fileCardView.setVisibility(View.VISIBLE);
 
                 fileName.setText(currentFile.getName());
-                fileSize.setText(String.valueOf(currentFile.getSizeInKB()));
+                fileSize.setText(currentFile.getSizeInKB() + " KB");
             } else {
                 clearFile();
                 Toast.makeText(getApplicationContext(), "Hãy chọn tập tin nhỏ hơn 50MB", Toast.LENGTH_LONG).show();

@@ -209,11 +209,10 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Rooms, ChatListAda
 
         if (sdf.format(date).equals(sdf.format(currentDate))) {
             sdf = new SimpleDateFormat("HH:mm");
-            return sdf.format(date);
         } else {
             sdf = new SimpleDateFormat("dd/MM");
-            return sdf.format(date);
         }
+        return sdf.format(date);
     }
 
     private void startChatRoom(Rooms room) {

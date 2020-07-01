@@ -107,7 +107,7 @@ public class LoginActivity extends AppCompatActivity {
                         moveToMainActivity();
                     } else {
                         Log.d(TAG, "loginWithEmail: fail");
-                        Toast.makeText(LoginActivity.this, "Không thể xác minh người dùng",
+                        Toast.makeText(LoginActivity.this, "Không thể xác minh người dùng\nVui lòng thử lại",
                                 Toast.LENGTH_LONG).show();
                     }
                     progressDialog.dismiss();
@@ -122,9 +122,13 @@ public class LoginActivity extends AppCompatActivity {
         if (TextUtils.isEmpty(email)) {
             emailField.setError("Không được để trống");
             valid = false;
+        } else if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+            emailField.setError("Không đúng định dạng email");
+            valid = false;
         } else {
             emailField.setError(null);
         }
+
         if (TextUtils.isEmpty(password)) {
             passwordField.setError("Không được để trống");
             valid = false;

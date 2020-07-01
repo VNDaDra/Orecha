@@ -125,8 +125,8 @@ public class RegisterActivity extends AppCompatActivity {
         boolean valid = true;
 
         String email = emailField.getEditText().getText().toString().trim();
-        if (TextUtils.isEmpty(email)) {
-            emailField.setError("Không để trống");
+        if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+            emailField.setError("Không đúng định dạng email");
             valid = false;
         } else {
             emailField.setError(null);
@@ -144,11 +144,7 @@ public class RegisterActivity extends AppCompatActivity {
         if (TextUtils.isEmpty(rePassword)) {
             rePasswordField.setError("Không để trống");
             valid = false;
-        } else {
-            rePasswordField.setError(null);
-        }
-
-        if (!TextUtils.equals(password, rePassword)) {
+        } else if (!TextUtils.equals(password, rePassword)) {
             rePasswordField.setError("Nhập lại mật khẩu chưa chính xác");
             valid = false;
         } else {

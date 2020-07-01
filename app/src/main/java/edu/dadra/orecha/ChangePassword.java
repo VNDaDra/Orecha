@@ -10,13 +10,10 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.EmailAuthProvider;
@@ -42,20 +39,12 @@ public class ChangePassword extends AppCompatActivity {
 
         init();
 
-        changePasswordLayout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                hideKeyboard();
-            }
-        });
+        changePasswordLayout.setOnClickListener(v -> hideKeyboard());
 
-        changePasswordButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (validate()) {
-                    progressDialog.show();
-                    changePassword();
-                }
+        changePasswordButton.setOnClickListener(v -> {
+            if (validate()) {
+                progressDialog.show();
+                changePassword();
             }
         });
     }
@@ -86,27 +75,19 @@ public class ChangePassword extends AppCompatActivity {
         String oldPassword = oldPasswordField.getEditText().getText().toString();
         AuthCredential credential = EmailAuthProvider.getCredential(email, oldPassword);
         firebaseUser.reauthenticate(credential)
-                .addOnCompleteListener(new OnCompleteListener<Void>() {
-                    @Override
-                    public void onComplete(@NonNull Task<Void> task) {
-                        firebaseUser.updatePassword(newPasswordField.getEditText().getText().toString().trim())
-                                .addOnCompleteListener(new OnCompleteListener<Void>() {
-                                    @Override
-                                    public void onComplete(@NonNull Task<Void> task) {
-                                        progressDialog.dismiss();
-                                        if (task.isSuccessful()) {
-                                            Log.d(TAG, "User password updated.");
-                                            Toast.makeText(getApplicationContext(), "Thành công", Toast.LENGTH_SHORT).show();
-                                            finish();
-                                        } else {
-                                            Log.d(TAG, "User password unable to update.");
-                                            Toast.makeText(getApplicationContext(), "Không thành công\n" + task.getException().getMessage(),
-                                                    Toast.LENGTH_SHORT).show();
-                                        }
-                                    }
-                                });
-                    }
-                });
+                .addOnCompleteListener(task -> firebaseUser.updatePassword(newPasswordField.getEditText().getText().toString().trim())
+                        .addOnCompleteListener(task1 -> {
+                            progressDialog.dismiss();
+                            if (task1.isSuccessful()) {
+                                Log.d(TAG, "User password updated.");
+                                Toast.makeText(getApplicationContext(), "Thành công", Toast.LENGTH_SHORT).show();
+                                finish();
+                            } else {
+                                Log.d(TAG, "User password unable to update.");
+                                Toast.makeText(getApplicationContext(), "Không thành công\n" + task1.getException().getMessage(),
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                        }));
 
 
     }
