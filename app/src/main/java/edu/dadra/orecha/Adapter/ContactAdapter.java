@@ -130,7 +130,8 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
     private void createChatRoom(Friends friend) {
         WriteBatch batch = db.batch();
 
-        DocumentReference myRoomIdRef = db.collection("rooms").document(currentUserData.getId())
+        DocumentReference myRoomIdRef = db
+                .collection("rooms").document(currentUserData.getId())
                 .collection("userRooms").document();
         String roomId = myRoomIdRef.getId();
 
@@ -139,7 +140,8 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
         myRoomData.put("friendId", friend.getId());
         myRoomData.put("lastMessageTime", null);
 
-        DocumentReference friendRoomIdRef = db.collection("rooms").document(friend.getId())
+        DocumentReference friendRoomIdRef = db
+                .collection("rooms").document(friend.getId())
                 .collection("userRooms").document(roomId);
 
         Map<String, Object> friendRoomData = new HashMap<>();
@@ -150,9 +152,11 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
         batch.set(myRoomIdRef, myRoomData);
         batch.set(friendRoomIdRef, friendRoomData);
 
-        DocumentReference friendIdRef = db.collection("contacts").document(currentUserData.getId())
+        DocumentReference friendIdRef = db
+                .collection("contacts").document(currentUserData.getId())
                 .collection("userContacts").document(friend.getId());
-        DocumentReference myIdRef = db.collection("contacts").document(friend.getId())
+        DocumentReference myIdRef = db
+                .collection("contacts").document(friend.getId())
                 .collection("userContacts").document(currentUserData.getId());
         batch.update(friendIdRef, "roomId", roomId);
         batch.update(myIdRef, "roomId", roomId);
@@ -175,9 +179,11 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
     private void deleteFriend(Friends friend) {
         WriteBatch batch = db.batch();
 
-        DocumentReference friendRef = db.collection("contacts").document(currentUserData.getId())
+        DocumentReference friendRef = db
+                .collection("contacts").document(currentUserData.getId())
                 .collection("userContacts").document(friend.getId());
-        DocumentReference myRef = db.collection("contacts").document(friend.getId())
+        DocumentReference myRef = db
+                .collection("contacts").document(friend.getId())
                 .collection("userContacts").document(currentUserData.getId());
 
         batch.delete(friendRef);
@@ -185,9 +191,11 @@ public class ContactAdapter extends FirestoreRecyclerAdapter<Friends, ContactAda
 
         try {
             //Delete both rooms
-            DocumentReference myRoomIdRef = db.collection("rooms").document(currentUserData.getId())
+            DocumentReference myRoomIdRef = db
+                    .collection("rooms").document(currentUserData.getId())
                     .collection("userRooms").document(friend.getRoomId());
-            DocumentReference friendRoomIdRef = db.collection("rooms").document(friend.getId())
+            DocumentReference friendRoomIdRef = db
+                    .collection("rooms").document(friend.getId())
                     .collection("userRooms").document(friend.getRoomId());
             batch.delete(myRoomIdRef);
             batch.delete(friendRoomIdRef);

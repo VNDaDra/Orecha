@@ -93,7 +93,7 @@ public class ForgotPasswordActivity extends AppCompatActivity {
         if (TextUtils.isEmpty(email)) {
             emailField.setError("Không được để trống");
             valid = false;
-        } else if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+        } else if (!email.matches("^[a-z][a-z0-9_.]{5,32}@[a-z0-9]{2,}(.[a-z0-9]{2,4}){1,2}$")) {
             emailField.setError("Không đúng định dạng email");
             valid = false;
         } else {

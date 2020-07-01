@@ -211,7 +211,7 @@ public class MainActivity extends AppCompatActivity {
 
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             String friendEmail = addFriendEmailField.getEditText().getText().toString().trim();
-            if (friendEmail.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+            if (friendEmail.matches("^[a-z][a-z0-9_.]{5,32}@[a-z0-9]{2,}(.[a-z0-9]{2,4}){1,2}$")) {
                 findUser(friendEmail);
             } else {
                 addFriendEmailField.setError("Không hợp lệ");

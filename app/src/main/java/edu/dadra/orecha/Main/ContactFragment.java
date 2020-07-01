@@ -7,7 +7,6 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
@@ -15,7 +14,6 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -25,10 +23,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Query;
 
 import java.util.Objects;
@@ -68,7 +63,8 @@ public class ContactFragment extends Fragment {
 
         displayUnseenFriendRequestBadge();
 
-        CollectionReference contactsRef = db.collection("contacts").document(firebaseUser.getUid())
+        CollectionReference contactsRef = db
+                .collection("contacts").document(firebaseUser.getUid())
                 .collection("userContacts");
         Query query = contactsRef.orderBy("email", Query.Direction.ASCENDING);
 
@@ -84,12 +80,9 @@ public class ContactFragment extends Fragment {
         contactAdapter.notifyDataSetChanged();
         contactRecyclerView.setAdapter(contactAdapter);
 
-        contactRecyclerView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                hideKeyboard();
-                return false;
-            }
+        contactRecyclerView.setOnTouchListener((v, event) -> {
+            hideKeyboard();
+            return false;
         });
 
         searchBar.addTextChangedListener(new TextWatcher() {
@@ -99,11 +92,13 @@ public class ContactFragment extends Fragment {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if (s.toString().trim().length() != 0) {
-                    Query filterQuery = db.collection("contacts").document(firebaseUser.getUid())
+                    Query filterQuery = db
+                            .collection("contacts").document(firebaseUser.getUid())
                             .collection("userContacts")
                             .orderBy("displayName", Query.Direction.ASCENDING)
                             .startAt(s.toString().trim())
                             .endAt(s.toString().trim() + "\uf8ff");
+
                     FirestoreRecyclerOptions<Friends> filterOption = new FirestoreRecyclerOptions.Builder<Friends>()
                             .setQuery(filterQuery, Friends.class).build();
                     contactAdapter.updateOptions(filterOption);
@@ -143,34 +138,28 @@ public class ContactFragment extends Fragment {
 
     private void displayUnseenFriendRequestBadge() {
         DocumentReference requestRef = db.collection("friendRequest").document(firebaseUser.getUid());
-        requestRef.addSnapshotListener(new EventListener<DocumentSnapshot>() {
-            @Override
-            public void onEvent(@Nullable DocumentSnapshot snapshot, @Nullable FirebaseFirestoreException e) {
-                if (snapshot != null && snapshot.exists()) {
-                    int unseen = snapshot.getLong("unseen").intValue();
-                    if (unseen > 0 && unseen < 9) {
-                        unseenFriendRequest.setText(String.valueOf(unseen));
-                        unseenFriendRequest.setVisibility(View.VISIBLE);
-                    } else if (unseen > 9) {
-                        unseenFriendRequest.setText("9+");
-                        unseenFriendRequest.setVisibility(View.VISIBLE);
-                    }
-                    else {
-                        unseenFriendRequest.setVisibility(View.GONE);
-                    }
+        requestRef.addSnapshotListener((snapshot, e) -> {
+            if (snapshot != null && snapshot.exists()) {
+                int unseen = snapshot.getLong("unseen").intValue();
+                if (unseen > 0 && unseen < 9) {
+                    unseenFriendRequest.setText(String.valueOf(unseen));
+                    unseenFriendRequest.setVisibility(View.VISIBLE);
+                } else if (unseen > 9) {
+                    unseenFriendRequest.setText("9+");
+                    unseenFriendRequest.setVisibility(View.VISIBLE);
+                }
+                else {
+                    unseenFriendRequest.setVisibility(View.GONE);
                 }
             }
         });
     }
 
     private void moveToFriendRequestActivity() {
-        friendRequest.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(getActivity().getApplicationContext(), FriendRequestActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                startActivity(intent);
-            }
+        friendRequest.setOnClickListener(v -> {
+            Intent intent = new Intent(getActivity().getApplicationContext(), FriendRequestActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(intent);
         });
     }
 

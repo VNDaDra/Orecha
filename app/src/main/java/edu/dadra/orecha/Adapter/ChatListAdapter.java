@@ -62,7 +62,7 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Rooms, ChatListAda
         super.onDataChanged();
     }
 
-    public void onBindViewHolder(ViewHolder holder, int position, Rooms room) {
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position, Rooms room) {
         displayFriendInformation(room.getFriendId(), holder);
 
         displayLastMessage(room.getRoomId(), holder);
@@ -122,8 +122,7 @@ public class ChatListAdapter extends FirestoreRecyclerAdapter<Rooms, ChatListAda
     }
 
     private void displayFriendInformation(String friendId, ViewHolder holder) {
-        DocumentReference friendRef = db
-                .collection("users").document(friendId);
+        DocumentReference friendRef = db.collection("users").document(friendId);
         friendRef.addSnapshotListener((snapshot, e) -> {
             if (e != null) {
                 Log.d(TAG, "Listen failed.", e);

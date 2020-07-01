@@ -22,31 +22,19 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 
 import com.bumptech.glide.Glide;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
-import com.google.firebase.storage.UploadTask;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -167,82 +155,62 @@ public class ProfileActivity extends AppCompatActivity {
 
     private void displaySendVerifyEmailButton() {
         sendVerifyEmailButton.setVisibility(View.VISIBLE);
-        sendVerifyEmailButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(getApplicationContext(), "Kiểm tra email để xác thực", Toast.LENGTH_LONG).show();
-                sendVerifyEmail();
-                countdown();
-                refresh.setVisibility(View.VISIBLE);
-                refresh.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        refreshVerifyStatus();
-                    }
-                });
-            }
+        sendVerifyEmailButton.setOnClickListener(v -> {
+            Toast.makeText(getApplicationContext(), "Kiểm tra email để xác thực", Toast.LENGTH_LONG).show();
+            sendVerifyEmail();
+            countdown();
+            refresh.setVisibility(View.VISIBLE);
+            refresh.setOnClickListener(v1 -> refreshVerifyStatus());
         });
     }
 
     private void getUserData(String userId) {
         db.collection("users").document(userId)
-                .addSnapshotListener(new EventListener<DocumentSnapshot>() {
-                    @Override
-                    public void onEvent(@Nullable DocumentSnapshot snapshot, @Nullable FirebaseFirestoreException e) {
-                        if (e != null) {
-                            Log.d(TAG, "Listen failed.", e);
-                            return;
-                        }
+                .addSnapshotListener((snapshot, e) -> {
+                    if (e != null) {
+                        Log.d(TAG, "Listen failed.", e);
+                        return;
+                    }
 
-                        if (snapshot != null && snapshot.exists()) {
-                            userData = snapshot.toObject(Users.class);
-                            if (!userData.getPhotoUrl().equals("")) {
-                                Glide.with(getApplicationContext())
-                                        .load(storage.getReferenceFromUrl(userData.getPhotoUrl()))
-                                        .placeholder(R.drawable.orange)
-                                        .into(profileAvatar);
-                            } else Glide.with(getApplicationContext())
-                                    .load(R.drawable.orange)
+                    if (snapshot != null && snapshot.exists()) {
+                        userData = snapshot.toObject(Users.class);
+                        if (!userData.getPhotoUrl().equals("")) {
+                            Glide.with(getApplicationContext())
+                                    .load(storage.getReferenceFromUrl(userData.getPhotoUrl()))
                                     .placeholder(R.drawable.orange)
                                     .into(profileAvatar);
+                        } else Glide.with(getApplicationContext())
+                                .load(R.drawable.orange)
+                                .placeholder(R.drawable.orange)
+                                .into(profileAvatar);
 
-                            profileTitleName.setText(userData.getDisplayName());
-                            profileName.setText(userData.getDisplayName());
-                            profileEmail.setText(userData.getEmail());
-                            profilePhone.setText(userData.getPhone());
-                        }
+                        profileTitleName.setText(userData.getDisplayName());
+                        profileName.setText(userData.getDisplayName());
+                        profileEmail.setText(userData.getEmail());
+                        profilePhone.setText(userData.getPhone());
                     }
                 });
     }
 
     private void setFieldEditable() {
-        editNameButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                profileName.setEnabled(true);
-                updateProfileButton.setEnabled(true);
-            }
+        editNameButton.setOnClickListener(v -> {
+            profileName.setEnabled(true);
+            updateProfileButton.setEnabled(true);
         });
 
-        editPhoneButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                profilePhone.setEnabled(true);
-                updateProfileButton.setEnabled(true);
-            }
+        editPhoneButton.setOnClickListener(v -> {
+            profilePhone.setEnabled(true);
+            updateProfileButton.setEnabled(true);
         });
     }
 
     private void avatarListener() {
-        profileAvatar.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (!userId.equals(firebaseUser.getUid())) {
-                    viewAvatar();
-                }
-                else {
-                    showViewImageDialog();
-                }
+        profileAvatar.setOnClickListener(v -> {
+            if (!userId.equals(firebaseUser.getUid())) {
+                viewAvatar();
+            }
+            else {
+                showViewImageDialog();
             }
         });
     }
@@ -256,19 +224,13 @@ public class ProfileActivity extends AppCompatActivity {
         LinearLayout updateAvatar = dialog.findViewById(R.id.profile_update_avatar);
         LinearLayout viewAvatar = dialog.findViewById(R.id.profile_view_avatar);
 
-        updateAvatar.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                chooseImage();
-                dialog.dismiss();
-            }
+        updateAvatar.setOnClickListener(v -> {
+            chooseImage();
+            dialog.dismiss();
         });
-        viewAvatar.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                viewAvatar();
-                dialog.dismiss();
-            }
+        viewAvatar.setOnClickListener(v -> {
+            viewAvatar();
+            dialog.dismiss();
         });
     }
 
@@ -321,32 +283,26 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void confirmChangeAvatar() {
-        avatarDeclineButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                avatarDeclineButton.setVisibility(View.GONE);
-                avatarAcceptButton.setVisibility(View.GONE);
-                if (!userData.getPhotoUrl().equals("")) {
-                    Glide.with(getApplicationContext())
-                            .load(storage.getReferenceFromUrl(userData.getPhotoUrl()))
-                            .placeholder(R.drawable.orange)
-                            .into(profileAvatar);
-                } else {
-                    Glide.with(getApplicationContext())
-                            .load(R.drawable.orange)
-                            .placeholder(R.drawable.orange)
-                            .into(profileAvatar);
-                }
+        avatarDeclineButton.setOnClickListener(v -> {
+            avatarDeclineButton.setVisibility(View.GONE);
+            avatarAcceptButton.setVisibility(View.GONE);
+            if (!userData.getPhotoUrl().equals("")) {
+                Glide.with(getApplicationContext())
+                        .load(storage.getReferenceFromUrl(userData.getPhotoUrl()))
+                        .placeholder(R.drawable.orange)
+                        .into(profileAvatar);
+            } else {
+                Glide.with(getApplicationContext())
+                        .load(R.drawable.orange)
+                        .placeholder(R.drawable.orange)
+                        .into(profileAvatar);
             }
         });
 
-        avatarAcceptButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                avatarDeclineButton.setVisibility(View.GONE);
-                avatarAcceptButton.setVisibility(View.GONE);
-                uploadAvatarToStorage();
-            }
+        avatarAcceptButton.setOnClickListener(v -> {
+            avatarDeclineButton.setVisibility(View.GONE);
+            avatarAcceptButton.setVisibility(View.GONE);
+            uploadAvatarToStorage();
         });
     }
 
@@ -359,31 +315,22 @@ public class ProfileActivity extends AppCompatActivity {
             StorageReference ref = storageReference.child(userId + "_" +
                     System.currentTimeMillis() + "." + getFileExtension(filePath));
             ref.putFile(filePath)
-                    .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
-                        @Override
-                        public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                            if (!userData.getPhotoUrl().equals("")) {
-                                storage.getReferenceFromUrl(userData.getPhotoUrl()).delete();
-                            }
-                            progressDialog.dismiss();
-                            updateAvatarUrlInDatabase(ref.toString());
-                            Toast.makeText(getApplicationContext(), "Thành công", Toast.LENGTH_SHORT).show();
+                    .addOnSuccessListener(taskSnapshot -> {
+                        if (!userData.getPhotoUrl().equals("")) {
+                            storage.getReferenceFromUrl(userData.getPhotoUrl()).delete();
                         }
+                        progressDialog.dismiss();
+                        updateAvatarUrlInDatabase(ref.toString());
+                        Toast.makeText(getApplicationContext(), "Thành công", Toast.LENGTH_SHORT).show();
                     })
-                    .addOnFailureListener(new OnFailureListener() {
-                        @Override
-                        public void onFailure(@NonNull Exception e) {
-                            progressDialog.dismiss();
-                            Toast.makeText(getApplicationContext(), "Lỗi "+e.getMessage(), Toast.LENGTH_SHORT).show();
-                        }
+                    .addOnFailureListener(e -> {
+                        progressDialog.dismiss();
+                        Toast.makeText(getApplicationContext(), "Lỗi "+e.getMessage(), Toast.LENGTH_SHORT).show();
                     })
-                    .addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
-                        @Override
-                        public void onProgress(UploadTask.TaskSnapshot taskSnapshot) {
-                            double progress = (100.0*taskSnapshot.getBytesTransferred()/taskSnapshot
-                                    .getTotalByteCount());
-                            progressDialog.setMessage("Đang tải lên "+(int)progress+"%");
-                        }
+                    .addOnProgressListener(taskSnapshot -> {
+                        double progress = (100.0*taskSnapshot.getBytesTransferred()/taskSnapshot
+                                .getTotalByteCount());
+                        progressDialog.setMessage("Đang tải lên "+(int)progress+"%");
                     });
         }
     }
@@ -397,43 +344,32 @@ public class ProfileActivity extends AppCompatActivity {
     private void updateAvatarUrlInDatabase(String ref) {
         userRef = db.collection("users").document(firebaseUser.getUid());
         userRef.update( "photoUrl", ref)
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Log.d(TAG, "updateAvatarUrlInDatabase fail");
-                    }
-                });
+                .addOnFailureListener(e -> Log.d(TAG, "updateAvatarUrlInDatabase fail"));
 
         db.collectionGroup("userContacts").whereEqualTo("id", firebaseUser.getUid())
                 .get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        if (task.isSuccessful()) {
-                            for (QueryDocumentSnapshot document : task.getResult()) {
-                                document.getReference().update("photoUrl", ref);
-                            }
-                        } else {
-                            Log.d(TAG, "Error getting documents: ", task.getException());
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            document.getReference().update("photoUrl", ref);
                         }
+                    } else {
+                        Log.d(TAG, "Error getting documents: ", task.getException());
                     }
                 });
     }
 
     private void updateButtonListener() {
-        updateProfileButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (checkValidInput()) {
-                    profileName.setEnabled(false);
-                    profilePhone.setEnabled(false);
-                    updateProfileButton.setEnabled(false);
+        updateProfileButton.setOnClickListener(v -> {
+            if (checkValidInput()) {
+                profileName.setEnabled(false);
+                profilePhone.setEnabled(false);
+                updateProfileButton.setEnabled(false);
 
-                    updateUsersCollection();
-                    updateContactsCollection();
+                updateUsersCollection();
+                updateContactsCollection();
 
-                    getUserData(userId);
-                }
+                getUserData(userId);
             }
         });
     }
@@ -442,29 +378,21 @@ public class ProfileActivity extends AppCompatActivity {
         userRef = db.collection("users").document(firebaseUser.getUid());
         userRef.update( "displayName", profileName.getText().toString().trim(),
                                     "phone", profilePhone.getText().toString().trim())
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Log.d(TAG, "updateUsersCollection fail");
-                    }
-                });
+                .addOnFailureListener(e -> Log.d(TAG, "updateUsersCollection fail"));
     }
 
     private void updateContactsCollection() {
         db.collectionGroup("userContacts").whereEqualTo("id", firebaseUser.getUid())
                 .get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        if (task.isSuccessful()) {
-                            for (QueryDocumentSnapshot document : task.getResult()) {
-                                document.getReference().update("displayName", profileName.getText().toString().trim(),
-                                        "phone", profilePhone.getText().toString().trim());
-                            }
-                            Toast.makeText(getApplicationContext(), "Cập nhật thành công", Toast.LENGTH_SHORT).show();
-                        } else {
-                            Log.d(TAG, "Error getting documents: ", task.getException());
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            document.getReference().update("displayName", profileName.getText().toString().trim(),
+                                    "phone", profilePhone.getText().toString().trim());
                         }
+                        Toast.makeText(getApplicationContext(), "Cập nhật thành công", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Log.d(TAG, "Error getting documents: ", task.getException());
                     }
                 });
     }
@@ -480,19 +408,9 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void layoutListener() {
-        topLayout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                hideKeyboard();
-            }
-        });
+        topLayout.setOnClickListener(v -> hideKeyboard());
 
-        bottomLayout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                hideKeyboard();
-            }
-        });
+        bottomLayout.setOnClickListener(v -> hideKeyboard());
     }
 
     private void hideKeyboard() {
@@ -505,16 +423,13 @@ public class ProfileActivity extends AppCompatActivity {
 
     private void sendVerifyEmail() {
         firebaseUser.sendEmailVerification()
-                .addOnCompleteListener(new OnCompleteListener<Void>() {
-                    @Override
-                    public void onComplete(@NonNull Task<Void> task) {
-                        if (task.isSuccessful()) {
-                            Toast.makeText(getApplicationContext(), "Kiểm tra email của bạn để tiến hành xác thực",
-                                    Toast.LENGTH_LONG).show();
-                        } else {
-                            Toast.makeText(getApplicationContext(), "Lỗi! Vui lòng thử lại sau",
-                                    Toast.LENGTH_SHORT).show();
-                        }
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        Toast.makeText(getApplicationContext(), "Kiểm tra email của bạn để tiến hành xác thực",
+                                Toast.LENGTH_LONG).show();
+                    } else {
+                        Toast.makeText(getApplicationContext(), "Lỗi! Vui lòng thử lại sau",
+                                Toast.LENGTH_SHORT).show();
                     }
                 });
     }

@@ -88,7 +88,7 @@ public class FriendRequestAdapter extends FirestoreRecyclerAdapter <FriendReques
         Log.d(TAG, Objects.requireNonNull(e.getMessage()));
     }
 
-    class ViewHolder extends RecyclerView.ViewHolder {
+    static class ViewHolder extends RecyclerView.ViewHolder {
         TextView displayName;
         ImageView avatar;
         Button declineButton;
@@ -103,7 +103,8 @@ public class FriendRequestAdapter extends FirestoreRecyclerAdapter <FriendReques
     }
 
     private void deleteFriendRequest(FriendRequest friendRequest) {
-        DocumentReference friendRequestRef = db.collection("friendRequest").document(currentUserData.getId())
+        DocumentReference friendRequestRef = db
+                .collection("friendRequest").document(currentUserData.getId())
                 .collection("listOfFriendRequest").document(friendRequest.getSenderId());
         friendRequestRef.delete();
     }
@@ -117,11 +118,13 @@ public class FriendRequestAdapter extends FirestoreRecyclerAdapter <FriendReques
                         if (document.exists()) {
                             WriteBatch batch = db.batch();
 
-                            DocumentReference friendIdRef = db.collection("contacts").document(currentUserData.getId())
+                            DocumentReference friendIdRef = db
+                                    .collection("contacts").document(currentUserData.getId())
                                     .collection("userContacts").document(friendRequest.getSenderId());
                             batch.set(friendIdRef, Objects.requireNonNull(document.getData()));
 
-                            DocumentReference myIdRef = db.collection("contacts").document(friendRequest.getSenderId())
+                            DocumentReference myIdRef = db
+                                    .collection("contacts").document(friendRequest.getSenderId())
                                     .collection("userContacts").document(currentUserData.getId());
                             batch.set(myIdRef, currentUserData);
 
@@ -131,7 +134,7 @@ public class FriendRequestAdapter extends FirestoreRecyclerAdapter <FriendReques
                                     deleteFriendRequest(friendRequest);
                                 } else {
                                     holder.acceptButton.setEnabled(true);
-                                    Toast.makeText(context, "LỖI\n Vui lòng thử lại", Toast.LENGTH_LONG).show();
+                                    Toast.makeText(context, "LỖI\nVui lòng thử lại", Toast.LENGTH_LONG).show();
                                 }
                             });
                         }
@@ -142,7 +145,8 @@ public class FriendRequestAdapter extends FirestoreRecyclerAdapter <FriendReques
     private void createChatRoom(FriendRequest friendRequest) {
         WriteBatch batch = db.batch();
 
-        DocumentReference myRoomIdRef = db.collection("rooms").document(currentUserData.getId())
+        DocumentReference myRoomIdRef = db
+                .collection("rooms").document(currentUserData.getId())
                 .collection("userRooms").document();
         String roomId = myRoomIdRef.getId();
 
@@ -152,7 +156,8 @@ public class FriendRequestAdapter extends FirestoreRecyclerAdapter <FriendReques
         myRoomData.put("friendId", friendRequest.getSenderId());
         myRoomData.put("lastMessageTime", null);
 
-        DocumentReference friendRoomIdRef = db.collection("rooms").document(friendRequest.getSenderId())
+        DocumentReference friendRoomIdRef = db
+                .collection("rooms").document(friendRequest.getSenderId())
                 .collection("userRooms").document(roomId);
 
         Map<String, Object> friendRoomData = new HashMap<>();
@@ -164,9 +169,11 @@ public class FriendRequestAdapter extends FirestoreRecyclerAdapter <FriendReques
         batch.set(myRoomIdRef, myRoomData);
         batch.set(friendRoomIdRef, friendRoomData);
 
-        DocumentReference friendIdRef = db.collection("contacts").document(currentUserData.getId())
+        DocumentReference friendIdRef = db
+                .collection("contacts").document(currentUserData.getId())
                 .collection("userContacts").document(friendRequest.getSenderId());
-        DocumentReference myIdRef = db.collection("contacts").document(friendRequest.getSenderId())
+        DocumentReference myIdRef = db
+                .collection("contacts").document(friendRequest.getSenderId())
                 .collection("userContacts").document(currentUserData.getId());
         batch.update(friendIdRef, "roomId", roomId);
         batch.update(myIdRef, "roomId", roomId);

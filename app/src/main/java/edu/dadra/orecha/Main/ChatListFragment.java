@@ -6,7 +6,6 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
@@ -53,8 +52,10 @@ public class ChatListFragment extends Fragment {
 
         init();
 
-        CollectionReference userRoomsRef = db.collection("rooms").document(firebaseUser.getUid())
+        CollectionReference userRoomsRef = db
+                .collection("rooms").document(firebaseUser.getUid())
                 .collection("userRooms");
+
         Query query = userRoomsRef.orderBy("lastMessageTime", Query.Direction.DESCENDING);
         FirestoreRecyclerOptions<Rooms> defaultOptions = new FirestoreRecyclerOptions.Builder<Rooms>()
                 .setQuery(query, Rooms.class).build();
@@ -69,12 +70,9 @@ public class ChatListFragment extends Fragment {
         chatListAdapter.notifyDataSetChanged();
         chatListRecyclerView.setAdapter(chatListAdapter);
 
-        chatListRecyclerView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                hideKeyboard();
-                return false;
-            }
+        chatListRecyclerView.setOnTouchListener((v, event) -> {
+            hideKeyboard();
+            return false;
         });
 
         searchBar.addTextChangedListener(new TextWatcher() {
@@ -85,11 +83,13 @@ public class ChatListFragment extends Fragment {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if (s.toString().trim().length() != 0) {
-                    Query filterQuery = db.collection("rooms").document(firebaseUser.getUid())
+                    Query filterQuery = db
+                            .collection("rooms").document(firebaseUser.getUid())
                             .collection("userRooms")
                             .orderBy("displayName", Query.Direction.ASCENDING)
                             .startAt(s.toString().trim())
                             .endAt(s.toString().trim() + "\uf8ff");
+
                     FirestoreRecyclerOptions<Rooms> filterOption = new FirestoreRecyclerOptions.Builder<Rooms>()
                             .setQuery(filterQuery, Rooms.class).build();
                     chatListAdapter.updateOptions(filterOption);
